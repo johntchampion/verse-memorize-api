@@ -4,16 +4,16 @@ import type { Verse } from '../data/verses';
 /**
  * Blank density and word-choice mode per stage.
  *
- * `density` is the fraction of words blanked; `firstLetter` shows the leading
- * character of each blanked word; tiles vs. typing follows the same table.
+ * `density` is the fraction of words blanked; tiles vs. typing follows the
+ * same table.
  */
-const STAGE_RULES: Record<Stage, { density: number; firstLetter: boolean; type: ExerciseType }> = {
-  learning_light: { density: 0.18, firstLetter: false, type: 'tile_fill_blank' },
-  learning_medium: { density: 0.5, firstLetter: false, type: 'tile_fill_blank' },
-  learning_heavy: { density: 0.8, firstLetter: true, type: 'tile_fill_blank' },
-  review: { density: 1, firstLetter: false, type: 'type_fill_blank' },
-  mastered: { density: 1, firstLetter: false, type: 'type_fill_blank' },
-  decayed: { density: 1, firstLetter: false, type: 'type_fill_blank' },
+const STAGE_RULES: Record<Stage, { density: number; type: ExerciseType }> = {
+  learning_light: { density: 0.18, type: 'tile_fill_blank' },
+  learning_medium: { density: 0.5, type: 'tile_fill_blank' },
+  learning_heavy: { density: 0.8, type: 'tile_fill_blank' },
+  review: { density: 1, type: 'type_fill_blank' },
+  mastered: { density: 1, type: 'type_fill_blank' },
+  decayed: { density: 1, type: 'type_fill_blank' },
 };
 
 /**
@@ -135,8 +135,7 @@ export function buildExercise(
   const blankedText = tokens
     .map((token, i) => {
       if (!blanks.has(i)) return token.raw;
-      const shown = rule.firstLetter ? token.raw.slice(token.start, token.start + 1) : '';
-      return token.raw.slice(0, token.start) + shown + BLANK + token.raw.slice(token.end);
+      return token.raw.slice(0, token.start) + BLANK + token.raw.slice(token.end);
     })
     .join(' ');
 

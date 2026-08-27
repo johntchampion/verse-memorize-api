@@ -128,12 +128,12 @@ and demotes `mastered` back to `review`.
 [`exerciseBuilder.ts`](./src/services/exerciseBuilder.ts) blanks words according
 to stage:
 
-| Stage                             | Blanked                  | Input mode |
-| --------------------------------- | ------------------------ | ---------- |
-| `learning_light`                  | ~18%                     | Tap tiles  |
-| `learning_medium`                 | ~50%                     | Tap tiles  |
-| `learning_heavy`                  | ~80%, first letter shown | Tap tiles  |
-| `review` / `mastered` / `decayed` | 100%                     | Typed      |
+| Stage                             | Blanked | Input mode |
+| --------------------------------- | ------- | ---------- |
+| `learning_light`                  | ~18%    | Tap tiles  |
+| `learning_medium`                 | ~50%    | Tap tiles  |
+| `learning_heavy`                  | ~80%    | Tap tiles  |
+| `review` / `mastered` / `decayed` | 100%    | Typed      |
 
 Below 100% density, content words are blanked before connectors (there's a
 stopword list, no NLP — the bank is small and hand-curated). Tile exercises mix
