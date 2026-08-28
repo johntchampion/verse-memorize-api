@@ -1,0 +1,10 @@
+node_modules
+dist
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+.git
+.gitignore
+README.md

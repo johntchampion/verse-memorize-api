@@ -55,6 +55,52 @@ curl -s localhost:3000/api/session/today -H "authorization: Bearer $TOKEN"
 
 ---
 
+## Docker
+
+The `Dockerfile` is a multi-stage build: it compiles TypeScript and installs
+`better-sqlite3`'s native addon in a throwaway build stage, then ships only
+`dist/`, pruned production `node_modules`, and `package.json` in the runtime
+image. The final image runs as a non-root user and has no build toolchain,
+source, or dev dependencies in it.
+
+Build it:
+
+```bash
+docker build -t verse-memorize-api .
+```
+
+Run it, generating a real secret and persisting the SQLite database in a named
+volume so it survives container restarts/recreates:
+
+```bash
+docker volume create verse-memorize-data
+
+docker run -d \
+  --name verse-memorize-api \
+  -p 3000:3000 \
+  -e JWT_SECRET="$(openssl rand -hex 32)" \
+  -v verse-memorize-data:/app/data \
+  --restart unless-stopped \
+  verse-memorize-api
+
+curl localhost:3000/health   # {"ok":true}
+```
+
+Notes:
+
+- `JWT_SECRET` is the only required env var — the container fails fast at boot
+  without it (same as running locally). Generate it once and pass it in as a
+  real secret (e.g. from your platform's secret store), not a literal in a
+  Dockerfile or compose file.
+- `DB_PATH` is preset to `/app/data/data.sqlite` in the image. Mount a volume
+  at `/app/data` (as above) so the database isn't lost when the container is
+  replaced; without it, data lives only in the container's writable layer.
+- `PORT` defaults to `3000` and is what's `EXPOSE`d; map it with `-p` as needed.
+- Rebuild and recreate the container to pick up code changes — there's no hot
+  reload in the image (`npm run dev` is a local-only workflow).
+
+---
+
 ## How it works
 
 This is the part worth reading before touching anything.
