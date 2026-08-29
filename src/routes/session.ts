@@ -62,7 +62,7 @@ sessionRouter.post('/attempt', (req, res) => {
 });
 
 /**
- * Marks the daily session complete and runs the slot ramp-up check.
+ * Marks the daily session complete and tops up any empty slots.
  * Idempotent per calendar day in the user's timezone.
  */
 sessionRouter.post('/session/complete', (req, res) => {

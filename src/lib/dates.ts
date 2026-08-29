@@ -1,5 +1,5 @@
 /**
- * Date-only helpers. `review_schedule.due_at` and the session-completion
+ * Date-only helpers. `user_verse.due_at` and the session-completion
  * idempotency check are both calendar-day concepts evaluated in the user's
  * timezone, never wall-clock instants.
  */

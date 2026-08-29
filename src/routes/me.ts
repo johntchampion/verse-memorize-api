@@ -4,7 +4,7 @@ import { db, type SessionLogRow, type UserRow, type UserVerseRow } from '../db/c
 import { getVerse } from '../data/verses';
 import { addDays, todayInTimezone } from '../lib/dates';
 import { userId } from '../middleware/auth';
-import { MAX_SLOTS, unlockedSlotCount } from '../services/slotRefill';
+import { MAX_SLOTS } from '../services/slotRefill';
 
 export const meRouter = Router();
 
@@ -44,6 +44,8 @@ function profileFor(id: string) {
     .prepare('SELECT COUNT(*) AS total FROM user_verse WHERE user_id = ?')
     .get(id) as { total: number };
 
+  const today = todayInTimezone(user.timezone);
+
   return {
     user: { id: user.id, email: user.email, timezone: user.timezone, createdAt: user.created_at },
     streak: currentStreak(sessions, user.timezone),
@@ -51,14 +53,22 @@ function profileFor(id: string) {
     versesStarted: total,
     slots: {
       max: MAX_SLOTS,
-      unlocked: unlockedSlotCount(id),
       active: active.map((row) => ({
         slot: row.slot,
         userVerseId: row.id,
         verseId: row.verse_id,
         reference: getVerse(row.verse_id)?.reference ?? null,
         stage: row.stage,
-        correctStreakInTier: row.correct_streak_in_tier,
+        consecutiveCorrect: row.consecutive_correct,
+        consecutiveIncorrect: row.consecutive_incorrect,
+        // The correct-run only counts toward an upgrade if it was accrued
+        // today, so the client needs the date to tell a live run from a dead
+        // one carried over from yesterday.
+        streakDate: row.streak_date,
+        // The one-tier-change-per-day cap, already spent: further correct
+        // answers today are practice, not progress.
+        tierChangeUsedToday:
+          row.last_upgrade_date === today || row.last_downgrade_date === today,
       })),
     },
   };

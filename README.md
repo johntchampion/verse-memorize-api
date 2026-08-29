@@ -117,69 +117,113 @@ the slug verbatim as a soft reference.
 
 ### Slots: what a user is actively learning
 
-A user works on **at most 3 verses at a time**. Slots ramp up based on _completed
-sessions_, not calendar days:
+A user works on **at most 3 verses at a time**. All 3 slots are live from
+signup — a new user starts with the first three verses by `order` already
+slotted, so their first session has something to work on in each.
 
-| Slot | Unlocks when                 |
-| ---- | ---------------------------- |
-| 1    | Signup                       |
-| 2    | `session_log` reaches 1 row  |
-| 3    | `session_log` reaches 2 rows |
+When a verse graduates its slot empties and immediately refills, in this
+priority order:
 
-When a verse graduates its slot empties and immediately refills with the next
-unassigned verse by `order`. Once the bank is exhausted slots just stay empty —
-there is no wraparound. All of this lives in
+1. **A verse waiting to be relearned**, oldest-queued first — one that failed
+   review badly enough to be pulled back into learning. It re-enters at
+   `learning_heavy` specifically, never lower.
+2. Otherwise the next unassigned verse by `order`.
+
+Once the bank is exhausted and nothing is queued, slots just stay empty — there
+is no wraparound. All of this lives in
 [`slotRefill.ts`](./src/services/slotRefill.ts).
 
 ### Stages
 
 ```
-learning_light → learning_medium → learning_heavy ──graduate──▶ review → mastered
-                                                                  │  ▲
-                                                       strength<20│  │strength≥20
-                                                                  ▼  │
-                                                                decayed
+        slotted — holds one of the 3 active slots          unslotted
+        ─────────────────────────────────────────          ─────────────────
+
+learning_light ──▶ learning_medium ──▶ learning_heavy ──▶ review ──▶ mastered
+               ◀──                 ◀──                ◀──        ◀──
+
+  ──▶  learning: 3 correct in a row, within one calendar day
+                 (out of learning_heavy this is graduation, and the slot empties)
+       review:   3 correct in a row, any span, steps the interval up;
+                 a step past 30 days becomes mastery instead
+  ◀──  learning: 2 wrong in a row — learning_light is the floor
+       review:   2 failed reviews, via the relearning queue, back to heavy
+       mastered: a single miss, straight to review at interval 1
 ```
 
+The first three are **slotted** — a verse in one of them occupies one of the
+user's 3 active slots. `review` and `mastered` are unslotted, reached only by
+being learned through all three slotted tiers. There is no numeric strength
+score; everything is driven by streaks of consecutive answers.
+
 **Graduation is an event, not a stage.** It stamps `graduated_at`, empties the
-slot, sets strength to 50, and opens an interval-1 review — then the verse _is_
-in `review`. There is no `graduated` stage; `graduated_at` is the record that it
-happened. (An earlier design had one, and because the review queue didn't select
-for it, graduated verses were stranded forever.)
+slot, and opens an interval-1 review — then the verse _is_ in `review`. There is
+no `graduated` stage; `graduated_at` is the record that it happened. (An earlier
+design had one, and because the review queue didn't select for it, graduated
+verses were stranded forever.)
 
-`decayed` is a flag rather than a detour: it stays in the review queue, just
-marked so the UI can nudge. It clears back to `review` once strength recovers.
+#### Slotted tiers
 
-### Scoring constants
+- **Up:** 3 correct **in a row within the same calendar day**. Because the run
+  has to fit inside one day, `consecutive_correct` starts over each morning —
+  two correct yesterday do not count toward today's three.
+- **Down:** 2 wrong in a row, which _may_ span days. `learning_light` is the
+  floor; two misses there change nothing.
+- **At most one tier change per verse per day, in either direction.** A verse
+  that has already moved today can't move again — the extra correct answers are
+  just practice. Either way the streak that would have triggered the change is
+  spent, so a fresh run is needed to try again.
+- Any tier change resets both streaks to zero. No partial credit carries over.
+
+#### Review
+
+Entered at `interval_days = 1`, climbing the ladder **1 → 3 → 7 → 14 → 30**.
+
+- **3 correct in a row** advances one rung and resets the counter. This run is
+  _not_ day-constrained — reviews are spaced days apart by definition.
+- **A wrong answer** resets the interval to 1 and the correct-run to 0, and
+  increments a separate wrong-run. **2 wrong in a row** pulls the verse out of
+  review entirely and queues it for the next available slot, where it re-enters
+  at `learning_heavy`. While queued it has no `due_at`, so it drops out of the
+  session until a slot picks it up. No count of how often a verse has been
+  requeued is kept.
+
+#### Mastered
+
+Reached when a verse would bump past the top of the ladder — 3 correct in a row
+while already at 30 days. It stays on the 30-day cadence so it doesn't go stale,
+and correct answers change nothing further; mastered is the ceiling.
+
+A single miss reverts it to `review` at interval 1, **and counts as the first of
+review's two strikes** — one more miss right after queues it for a slot without
+waiting for two fresh misses.
+
+### Tuning constants
 
 All of these are exported from
 [`stageMachine.ts`](./src/services/stageMachine.ts) — tune them there, never at a
 call site.
 
-| Constant                 | Value           | Meaning                                                |
-| ------------------------ | --------------- | ------------------------------------------------------ |
-| `TIER_ADVANCE_THRESHOLD` | 3               | Consecutive correct answers to advance a learning tier |
-| `INTERVAL_PROGRESSION`   | 1, 3, 7, 14, 30 | Review interval ladder, in days                        |
-| `MASTERY_REVIEWS_AT_MAX` | 3               | Consecutive successes _at_ 30 days before `mastered`   |
-| `GRADUATION_STRENGTH`    | 50              | Strength a verse carries out of learning               |
-| `STRENGTH_ON_CORRECT`    | +10             | Per correct review (caps at 100)                       |
-| `STRENGTH_ON_INCORRECT`  | −25             | Per failed review (floors at 0)                        |
-| `DECAY_FLOOR`            | 20              | Below this → `decayed`; at or above → back to `review` |
-
-A correct review steps one rung up the ladder; a failed one resets it to 1 day
-and demotes `mastered` back to `review`.
+| Constant                    | Value           | Meaning                                              |
+| --------------------------- | --------------- | ---------------------------------------------------- |
+| `TIER_ADVANCE_THRESHOLD`    | 3               | Same-day correct run that advances a slotted tier    |
+| `TIER_DOWNGRADE_THRESHOLD`  | 2               | Wrong run that drops a slotted tier                  |
+| `INTERVAL_PROGRESSION`      | 1, 3, 7, 14, 30 | Review interval ladder, in days                      |
+| `REVIEW_ADVANCE_THRESHOLD`  | 3               | Correct reviews that step one rung up                |
+| `REVIEW_DEMOTION_THRESHOLD` | 2               | Failed reviews that queue a verse for relearning     |
 
 ### Exercise generation
 
 [`exerciseBuilder.ts`](./src/services/exerciseBuilder.ts) blanks words according
 to stage:
 
-| Stage                             | Blanked | Input mode |
-| --------------------------------- | ------- | ---------- |
-| `learning_light`                  | ~18%    | Tap tiles  |
-| `learning_medium`                 | ~50%    | Tap tiles  |
-| `learning_heavy`                  | ~80%    | Tap tiles  |
-| `review` / `mastered` / `decayed` | 100%    | Typed      |
+| Stage             | Blanked | Input mode |
+| ----------------- | ------- | ---------- |
+| `learning_light`  | ~18%    | Tap tiles  |
+| `learning_medium` | ~50%    | Tap tiles  |
+| `learning_heavy`  | ~80%    | Tap tiles  |
+| `review`          | 100%    | Tap tiles  |
+| `mastered`        | 100%    | Typed      |
 
 Below 100% density, content words are blanked before connectors (there's a
 stopword list, no NLP — the bank is small and hand-curated). Tile exercises mix
@@ -206,8 +250,8 @@ src/
   middleware/auth.ts        JWT sign/verify, requireAuth
   routes/                   auth, session, verses, me
   services/
-    stageMachine.ts         Stage/strength/schedule transitions + constants
-    slotRefill.ts           Slot ramp-up and refill
+    stageMachine.ts         Stage/streak/schedule transitions + constants
+    slotRefill.ts           Slot fill and relearning priority
     sessionBuilder.ts       Builds today's queue
     exerciseBuilder.ts      Blanking and word banks
   app.ts / server.ts        Wiring and boot
@@ -229,7 +273,7 @@ Domain rules belong in `services/`.
 | `POST`  | `/auth/login`           | Return JWT                                      |
 | `GET`   | `/api/session/today`    | Today's ordered exercise queue                  |
 | `POST`  | `/api/attempt`          | Record one attempt; returns updated verse state |
-| `POST`  | `/api/session/complete` | Log the session, run slot ramp-up               |
+| `POST`  | `/api/session/complete` | Log the session, top up any empty slots         |
 | `GET`   | `/api/verses`           | Full bank with per-user status                  |
 | `GET`   | `/api/verses/:id`       | One verse + that user's history                 |
 | `GET`   | `/api/me`               | Profile, streak, slot state                     |
@@ -239,7 +283,7 @@ Browse statuses are `locked` / `active` / `review` / `mastered`, with
 `graduatedAt` alongside so the UI can badge graduation as an achievement.
 
 `POST /api/session/complete` is idempotent per calendar day in the user's
-timezone — calling it twice won't double-count toward slot ramp-up.
+timezone — calling it twice won't double-count toward the streak.
 
 ---
 
@@ -270,8 +314,8 @@ Three invariants the app depends on:
 
 ### Tuning the algorithm
 
-Change the exported constants in `stageMachine.ts` (thresholds, ladder, strength
-deltas) or `STAGE_RULES` in `exerciseBuilder.ts` (blank densities). Both are
+Change the exported constants in `stageMachine.ts` (streak thresholds, interval
+ladder) or `STAGE_RULES` in `exerciseBuilder.ts` (blank densities). Both are
 single-source; nothing hardcodes these numbers elsewhere.
 
 ### Wiping the database
@@ -295,7 +339,6 @@ will be empty:
 ```bash
 sqlite3 data.sqlite "
 DELETE FROM attempt;
-DELETE FROM review_schedule;
 DELETE FROM session_log;
 DELETE FROM user_verse;
 DELETE FROM users;
@@ -313,6 +356,10 @@ an existing column needs a manual `ALTER TABLE` against the live file. Adding a
 non-`.ts` file under `src/` also means updating the `build` script, which copies
 `schema.sql` into `dist/` by hand.
 
+`migrate()` refuses to open a database written before the progression rewrite
+(one with a `review_schedule` table or a `user_verse.strength` column) rather
+than half-applying the new schema over it. Wipe the file and start fresh.
+
 Adding a stage is deliberately compile-checked: widen `Stage` in `db/client.ts`
 and `tsc` will point at every switch and lookup table that needs the new case.
 
@@ -329,10 +376,13 @@ and `tsc` will point at every switch and lookup table that needs the new case.
   raw timestamps for "same day".
 - **Missed reviews aren't swept.** An overdue verse stays in the queue and only
   changes state when the user actually attempts it. Nothing penalises absence.
-- **A decayed verse still climbs the interval ladder** at the normal rate, so the
-  verse a user is worst at gets scheduled further out on each success. The
-  ladder deliberately doesn't special-case `decayed`; whether it _should_ is an
-  open question.
+- **A verse queued for relearning can wait indefinitely.** It only re-enters
+  learning when a slot opens, which happens when some _other_ verse graduates.
+  A user with three slow slots and a failed review sits with it parked.
+- **Timezone changes are retroactive.** `last_upgrade_date`, `last_downgrade_date`
+  and `streak_date` are local dates written at the time of the attempt, so moving
+  timezone can make a day cap look already-used or already-expired. It's a
+  once-in-a-while event and self-corrects the next day.
 - **No test suite yet** (`npm test` is a stub). Verification so far has been
   manual walks through the stage machine.
 

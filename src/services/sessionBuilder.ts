@@ -1,4 +1,4 @@
-import { db, type ReviewScheduleRow, type UserVerseRow } from '../db/client';
+import { db, type UserVerseRow } from '../db/client';
 import { getVerse } from '../data/verses';
 import { todayInTimezone } from '../lib/dates';
 import { buildExercise, type Exercise } from './exerciseBuilder';
@@ -30,16 +30,6 @@ export function buildTodaySession(userId: string, timezone: string): SessionExer
     .prepare('SELECT * FROM user_verse WHERE user_id = ?')
     .all(userId) as UserVerseRow[];
 
-  const schedules = new Map(
-    (db
-      .prepare(
-        `SELECT rs.* FROM review_schedule rs
-           JOIN user_verse uv ON uv.id = rs.user_verse_id
-          WHERE uv.user_id = ?`,
-      )
-      .all(userId) as ReviewScheduleRow[]).map((s) => [s.user_verse_id, s]),
-  );
-
   // One per-verse queue per active verse; each is drained round-robin below.
   const perVerse: SessionExercise[][] = [];
 
@@ -48,8 +38,9 @@ export function buildTodaySession(userId: string, timezone: string): SessionExer
     if (!verse) continue; // Verse pulled from the bank; skip rather than 500.
 
     if (isReviewStage(row.stage)) {
-      const due = schedules.get(row.id);
-      if (!due || due.due_at > today) continue;
+      // A null due_at means unscheduled — a verse queued for relearning sits
+      // out of the rotation until a slot picks it up.
+      if (!row.due_at || row.due_at > today) continue;
       perVerse.push([
         {
           ...buildExercise(verse, row.id, row.stage),
@@ -60,7 +51,7 @@ export function buildTodaySession(userId: string, timezone: string): SessionExer
       continue;
     }
 
-    if (isLearningStage(row.stage)) {
+    if (isLearningStage(row.stage) && row.slot !== null) {
       perVerse.push(
         Array.from({ length: EXERCISES_PER_LEARNING_VERSE }, (_, instance) => ({
           ...buildExercise(verse, row.id, row.stage, instance),

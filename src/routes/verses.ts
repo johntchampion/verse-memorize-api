@@ -1,11 +1,5 @@
 import { Router } from 'express';
-import {
-  db,
-  type AttemptRow,
-  type ReviewScheduleRow,
-  type Stage,
-  type UserVerseRow,
-} from '../db/client';
+import { db, type AttemptRow, type Stage, type UserVerseRow } from '../db/client';
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses';
 import { userId } from '../middleware/auth';
 
@@ -24,10 +18,7 @@ function statusFor(stage: Stage | undefined): VerseStatus {
       return 'active';
     case 'mastered':
       return 'mastered';
-    // `decayed` is a flagged variant of review, not its own browse status —
-    // callers read the `decayed` boolean alongside it.
     case 'review':
-    case 'decayed':
       return 'review';
   }
 }
@@ -53,8 +44,9 @@ versesRouter.get('/verses', (req, res) => {
       order: verse.order,
       status: statusFor(row?.stage),
       stage: row?.stage ?? null,
-      decayed: row?.stage === 'decayed',
-      strength: row?.strength ?? 0,
+      // Pulled out of review and waiting for a slot — a flagged variant of
+      // review rather than a browse status of its own.
+      needsRelearning: row?.needs_relearning === 1,
       slot: row?.slot ?? null,
       // Graduation is an achievement the UI can badge, not a status of its own.
       graduatedAt: row?.graduated_at ?? null,
@@ -86,11 +78,9 @@ versesRouter.get('/verses/:id', (req, res) => {
         .all(row.id) as AttemptRow[])
     : [];
 
-  const schedule = row
-    ? (db
-        .prepare('SELECT * FROM review_schedule WHERE user_verse_id = ?')
-        .get(row.id) as ReviewScheduleRow | undefined) ?? null
-    : null;
+  // Scheduling lives on the row itself; a learning or queued verse has none.
+  const schedule =
+    row?.due_at != null ? { dueAt: row.due_at, intervalDays: row.interval_days } : null;
 
   res.json({
     verse: {

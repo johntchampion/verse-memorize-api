@@ -13,7 +13,6 @@ const STAGE_RULES: Record<Stage, { density: number; type: ExerciseType }> = {
   learning_heavy: { density: 0.8, type: 'tile_fill_blank' },
   review: { density: 1, type: 'tile_fill_blank' },
   mastered: { density: 1, type: 'type_fill_blank' },
-  decayed: { density: 1, type: 'tile_fill_blank' },
 }
 
 /**
