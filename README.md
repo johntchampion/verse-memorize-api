@@ -282,8 +282,6 @@ src/
   lib/words.ts              Shared word splitting (tiles + validator)
   middleware/auth.ts        JWT sign/verify, requireAuth
   routes/                   auth, session, verses, me, translations
-scripts/
-  fetch-translation.ts      Author-time: pull a translation's text
   services/
     stageMachine.ts         Stage/streak/schedule transitions + constants
     slotRefill.ts           Slot fill and relearning priority
@@ -364,10 +362,9 @@ Invariants the app depends on:
 
 ### Adding a translation
 
-1. Fetch the text: `npx tsx scripts/fetch-translation.ts <code>`. It walks the
-   WEB file's references against bible-api.com, copies each `id` and `order`
-   verbatim, and writes `src/data/translations/<code>.json` with empty decoys.
-   Author-time only — nothing fetches at runtime.
+1. Write `src/data/translations/<code>.json`, copying each `id` and `order`
+   from the WEB file verbatim and filling in that translation's `text` for
+   every verse.
 2. Write a decoy pool for each verse, in that translation's own vocabulary.
 3. Add an entry to `TRANSLATIONS` in
    [`src/data/translations/catalog.ts`](./src/data/translations/catalog.ts) with
