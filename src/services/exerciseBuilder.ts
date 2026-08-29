@@ -1,5 +1,6 @@
 import type { ExerciseType, Stage } from '../db/client'
 import type { Verse } from '../data/verses'
+import { WORD_PATTERN } from '../lib/words'
 
 /**
  * Blank density and word-choice mode per stage.
@@ -82,7 +83,7 @@ function tokenize(text: string): Token[] {
     .split(/\s+/)
     .filter(Boolean)
     .map((raw) => {
-      const match = /[\p{L}\p{N}'’-]+/u.exec(raw)
+      const match = WORD_PATTERN.exec(raw)
       if (!match) return { raw, core: '', start: 0, end: 0 }
       return {
         raw,

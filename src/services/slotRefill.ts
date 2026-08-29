@@ -1,9 +1,9 @@
-import { randomUUID } from 'node:crypto';
-import { db, type UserVerseRow } from '../db/client';
-import { versesInOrder } from '../data/verses';
+import { randomUUID } from 'node:crypto'
+import { db, type UserVerseRow } from '../db/client'
+import { versesInOrder } from '../data/verses'
 
 /** A user holds at most 3 active learning slots at once. */
-export const MAX_SLOTS = 3;
+export const MAX_SLOTS = 3
 
 /**
  * The next verse in `order` the user has no user_verse row for, or undefined
@@ -12,11 +12,15 @@ export const MAX_SLOTS = 3;
  */
 function nextUnassignedVerseId(userId: string): string | undefined {
   const assigned = new Set(
-    (db.prepare('SELECT verse_id FROM user_verse WHERE user_id = ?').all(userId) as {
-      verse_id: string;
-    }[]).map((r) => r.verse_id),
-  );
-  return versesInOrder().find((v) => !assigned.has(v.id))?.id;
+    (
+      db
+        .prepare('SELECT verse_id FROM user_verse WHERE user_id = ?')
+        .all(userId) as {
+        verse_id: string
+      }[]
+    ).map((r) => r.verse_id),
+  )
+  return versesInOrder().find((v) => !assigned.has(v.id))?.id
 }
 
 /**
@@ -31,7 +35,7 @@ function oldestQueuedRelearner(userId: string): UserVerseRow | undefined {
         ORDER BY relearning_queued_at ASC
         LIMIT 1`,
     )
-    .get(userId) as UserVerseRow | undefined;
+    .get(userId) as UserVerseRow | undefined
 }
 
 /**
@@ -45,12 +49,16 @@ function oldestQueuedRelearner(userId: string): UserVerseRow | undefined {
  */
 export function refillSlots(userId: string): UserVerseRow[] {
   const occupied = new Set(
-    (db
-      .prepare('SELECT slot FROM user_verse WHERE user_id = ? AND slot IS NOT NULL')
-      .all(userId) as { slot: number }[]).map((r) => r.slot),
-  );
+    (
+      db
+        .prepare(
+          'SELECT slot FROM user_verse WHERE user_id = ? AND slot IS NOT NULL',
+        )
+        .all(userId) as { slot: number }[]
+    ).map((r) => r.slot),
+  )
 
-  const filled: UserVerseRow[] = [];
+  const filled: UserVerseRow[] = []
 
   const promote = db.prepare(
     `UPDATE user_verse
@@ -66,32 +74,32 @@ export function refillSlots(userId: string): UserVerseRow[] {
             last_upgrade_date = NULL,
             last_downgrade_date = NULL
       WHERE id = ?`,
-  );
+  )
 
   const insert = db.prepare(
     `INSERT INTO user_verse (id, user_id, verse_id, stage, slot, activated_at)
      VALUES (?, ?, ?, 'learning_light', ?, ?)`,
-  );
+  )
 
-  const read = db.prepare('SELECT * FROM user_verse WHERE id = ?');
+  const read = db.prepare('SELECT * FROM user_verse WHERE id = ?')
 
   for (let slot = 1; slot <= MAX_SLOTS; slot += 1) {
-    if (occupied.has(slot)) continue;
+    if (occupied.has(slot)) continue
 
-    const relearner = oldestQueuedRelearner(userId);
+    const relearner = oldestQueuedRelearner(userId)
     if (relearner) {
-      promote.run(slot, relearner.id);
-      filled.push(read.get(relearner.id) as UserVerseRow);
-      continue;
+      promote.run(slot, relearner.id)
+      filled.push(read.get(relearner.id) as UserVerseRow)
+      continue
     }
 
-    const verseId = nextUnassignedVerseId(userId);
-    if (!verseId) break; // Bank exhausted — leave the slot empty.
+    const verseId = nextUnassignedVerseId(userId)
+    if (!verseId) break // Bank exhausted — leave the slot empty.
 
-    const id = randomUUID();
-    insert.run(id, userId, verseId, slot, new Date().toISOString());
-    filled.push(read.get(id) as UserVerseRow);
+    const id = randomUUID()
+    insert.run(id, userId, verseId, slot, new Date().toISOString())
+    filled.push(read.get(id) as UserVerseRow)
   }
 
-  return filled;
+  return filled
 }

@@ -8,7 +8,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && cp src/db/schema.sql dist/db/schema.sql",
+    "build": "tsc && cp src/db/schema.sql dist/db/schema.sql && mkdir -p dist/data/translations && cp src/data/translations/*.json dist/data/translations/",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"

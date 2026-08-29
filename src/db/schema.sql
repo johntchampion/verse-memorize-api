@@ -1,12 +1,16 @@
--- Per-user state only. Verse text and decoys live in src/data/verses.ts and
--- are never written to the database.
+-- Per-user state only. Verse text and decoys live in src/data/translations/
+-- and are never written to the database. user_verse.verse_id is a
+-- translation-independent slug, so changing users.translation swaps the words
+-- a user sees without touching a single row of their progress.
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,           -- uuid
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   created_at TEXT NOT NULL,      -- ISO 8601
-  timezone TEXT NOT NULL DEFAULT 'UTC'  -- for "day" boundary calculations
+  timezone TEXT NOT NULL DEFAULT 'UTC', -- for "day" boundary calculations
+  translation TEXT NOT NULL DEFAULT 'WEB'  -- code from data/translations/catalog.ts;
+                                           -- selects which text and decoys are served
 );
 
 -- One row per verse a user has started. Holds both the learning-tier state and
@@ -15,7 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_verse (
   id TEXT PRIMARY KEY,           -- uuid
   user_id TEXT NOT NULL REFERENCES users(id),
-  verse_id TEXT NOT NULL,        -- references data/verses.ts id, not a DB fk
+  verse_id TEXT NOT NULL,        -- references data/verses.ts id, not a DB fk;
+                                 -- the same slug in every translation
   stage TEXT NOT NULL,           -- 'learning_light' | 'learning_medium' |
                                  -- 'learning_heavy' | 'review' | 'mastered'.
                                  -- Graduation is an event stamped in

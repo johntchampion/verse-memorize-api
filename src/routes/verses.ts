@@ -1,43 +1,73 @@
-import { Router } from 'express';
-import { db, type AttemptRow, type Stage, type UserVerseRow } from '../db/client';
-import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses';
-import { userId } from '../middleware/auth';
+import { Router, type Request } from 'express'
+import {
+  db,
+  type AttemptRow,
+  type Stage,
+  type UserRow,
+  type UserVerseRow,
+} from '../db/client'
+import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
+import { translationFor } from '../lib/translation'
+import { userId } from '../middleware/auth'
 
-export const versesRouter = Router();
+export const versesRouter = Router()
+
+/**
+ * The translation to serve this request in — the account preference unless
+ * `?translation=` overrides it. Returns undefined for an unknown code so the
+ * handler can 400 rather than silently serving something else.
+ */
+function translationOf(req: Request, id: string): string | undefined {
+  const user = db
+    .prepare('SELECT translation FROM users WHERE id = ?')
+    .get(id) as Pick<UserRow, 'translation'> | undefined
+  return translationFor(req, user?.translation)
+}
 
 /** Browse-screen status for a verse. */
-type VerseStatus = 'locked' | 'active' | 'review' | 'mastered';
+type VerseStatus = 'locked' | 'active' | 'review' | 'mastered'
 
 function statusFor(stage: Stage | undefined): VerseStatus {
   switch (stage) {
     case undefined:
-      return 'locked';
+      return 'locked'
     case 'learning_light':
     case 'learning_medium':
     case 'learning_heavy':
-      return 'active';
+      return 'active'
     case 'mastered':
-      return 'mastered';
+      return 'mastered'
     case 'review':
-      return 'review';
+      return 'review'
   }
 }
 
 /** The full bank with per-user status. */
 versesRouter.get('/verses', (req, res) => {
-  const id = userId(req);
+  const id = userId(req)
+  const translation = translationOf(req, id)
+  if (!translation) {
+    res.status(400).json({ error: 'unknown translation' })
+    return
+  }
+
   const byVerseId = new Map(
-    (db.prepare('SELECT * FROM user_verse WHERE user_id = ?').all(id) as UserVerseRow[]).map(
-      (row) => [row.verse_id, row],
-    ),
-  );
+    (
+      db
+        .prepare('SELECT * FROM user_verse WHERE user_id = ?')
+        .all(id) as UserVerseRow[]
+    ).map((row) => [row.verse_id, row]),
+  )
 
   // `orderBy=canon` returns Bible order (Genesis through Revelation);
   // anything else (including omitted) keeps the curriculum order.
-  const bank = req.query.orderBy === 'canon' ? versesInCanonOrder() : versesInOrder();
+  const bank =
+    req.query.orderBy === 'canon'
+      ? versesInCanonOrder(translation)
+      : versesInOrder(translation)
 
   const verses = bank.map((verse) => {
-    const row = byVerseId.get(verse.id);
+    const row = byVerseId.get(verse.id)
     return {
       id: verse.id,
       reference: verse.reference,
@@ -53,36 +83,47 @@ versesRouter.get('/verses', (req, res) => {
       // Locked verses withhold the text — that is the point of the browse
       // screen's lock state.
       text: row ? verse.text : null,
-    };
-  });
+    }
+  })
 
-  res.json({ verses });
-});
+  res.json({ translation, verses })
+})
 
 /** Single verse detail plus this user's history. */
 versesRouter.get('/verses/:id', (req, res) => {
-  const id = userId(req);
-  const verse = getVerse(req.params.id);
+  const id = userId(req)
+  const translation = translationOf(req, id)
+  if (!translation) {
+    res.status(400).json({ error: 'unknown translation' })
+    return
+  }
+
+  const verse = getVerse(req.params.id, translation)
   if (!verse) {
-    res.status(404).json({ error: 'verse not found' });
-    return;
+    res.status(404).json({ error: 'verse not found' })
+    return
   }
 
   const row = db
     .prepare('SELECT * FROM user_verse WHERE user_id = ? AND verse_id = ?')
-    .get(id, verse.id) as UserVerseRow | undefined;
+    .get(id, verse.id) as UserVerseRow | undefined
 
   const attempts = row
     ? (db
-        .prepare('SELECT * FROM attempt WHERE user_verse_id = ? ORDER BY created_at DESC LIMIT 100')
+        .prepare(
+          'SELECT * FROM attempt WHERE user_verse_id = ? ORDER BY created_at DESC LIMIT 100',
+        )
         .all(row.id) as AttemptRow[])
-    : [];
+    : []
 
   // Scheduling lives on the row itself; a learning or queued verse has none.
   const schedule =
-    row?.due_at != null ? { dueAt: row.due_at, intervalDays: row.interval_days } : null;
+    row?.due_at != null
+      ? { dueAt: row.due_at, intervalDays: row.interval_days }
+      : null
 
   res.json({
+    translation,
     verse: {
       id: verse.id,
       reference: verse.reference,
@@ -98,5 +139,5 @@ versesRouter.get('/verses/:id', (req, res) => {
       total: attempts.length,
       correct: attempts.filter((a) => a.correct === 1).length,
     },
-  });
-});
+  })
+})

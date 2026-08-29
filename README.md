@@ -107,13 +107,43 @@ This is the part worth reading before touching anything.
 
 ### Verses are code, not data
 
-The verse bank lives in [`src/data/verses.ts`](./src/data/verses.ts) and is never
-written to the database. There is no admin UI; **adding a verse is a code
-deploy.** The database holds only per-user state, and `user_verse.verse_id` stores
-the slug verbatim as a soft reference.
+The verse bank lives in [`src/data/translations/`](./src/data/translations) as one
+JSON file per translation, loaded and validated at boot by
+[`src/data/verses.ts`](./src/data/verses.ts). It is never written to the database.
+There is no admin UI; **adding a verse or a translation is a code deploy.** The
+database holds only per-user state, and `user_verse.verse_id` stores the slug
+verbatim as a soft reference.
 
-> ⚠️ **The bank currently holds 3 placeholder verses, not the real 100.** Filling
-> it in is outstanding work — see [Adding verses](#adding-verses).
+The bank holds 99 verses in two translations, WEB and KJV.
+
+### Translations
+
+Every translation file repeats the whole record — `id`, `reference`, `order`,
+`text`, `decoys` — so a translation is one file you can read top to bottom. WEB is
+the **reference translation**: its file defines which verses exist, their `order`,
+their `reference`, and canonical Bible order. `validateBank()` in `verses.ts`
+checks every other file against it at startup and **throws if they disagree**, so
+an incomplete translation takes the server down at boot rather than serving a
+half-translated session.
+
+`decoys` are per-translation on purpose. A WEB pool dropped into a KJV exercise
+leaks modern vocabulary into the tiles — `sky` sitting among KJV words when the
+answer is `firmament` gives the answer away.
+
+**Progress is translation-independent.** `user_verse.verse_id` is the same slug in
+every translation and `order` is identical across files, so switching translation
+changes the words a user sees and nothing else: no streak, schedule, or slot moves.
+That invariant is the whole reason the validator is strict.
+
+Which translation a request is served in:
+
+1. `?translation=CODE` on a read endpoint, if present — a preview that never
+   writes back to the account;
+2. otherwise `users.translation`, defaulting to `WEB`.
+
+An unknown code in the query string is a `400`. An unknown code _stored_ on the
+account — a translation since removed from the catalog — silently falls back to
+the default rather than erroring on every request.
 
 ### Slots: what a user is actively learning
 
@@ -204,13 +234,13 @@ All of these are exported from
 [`stageMachine.ts`](./src/services/stageMachine.ts) — tune them there, never at a
 call site.
 
-| Constant                    | Value           | Meaning                                              |
-| --------------------------- | --------------- | ---------------------------------------------------- |
-| `TIER_ADVANCE_THRESHOLD`    | 3               | Same-day correct run that advances a slotted tier    |
-| `TIER_DOWNGRADE_THRESHOLD`  | 2               | Wrong run that drops a slotted tier                  |
-| `INTERVAL_PROGRESSION`      | 1, 3, 7, 14, 30 | Review interval ladder, in days                      |
-| `REVIEW_ADVANCE_THRESHOLD`  | 3               | Correct reviews that step one rung up                |
-| `REVIEW_DEMOTION_THRESHOLD` | 2               | Failed reviews that queue a verse for relearning     |
+| Constant                    | Value           | Meaning                                           |
+| --------------------------- | --------------- | ------------------------------------------------- |
+| `TIER_ADVANCE_THRESHOLD`    | 3               | Same-day correct run that advances a slotted tier |
+| `TIER_DOWNGRADE_THRESHOLD`  | 2               | Wrong run that drops a slotted tier               |
+| `INTERVAL_PROGRESSION`      | 1, 3, 7, 14, 30 | Review interval ladder, in days                   |
+| `REVIEW_ADVANCE_THRESHOLD`  | 3               | Correct reviews that step one rung up             |
+| `REVIEW_DEMOTION_THRESHOLD` | 2               | Failed reviews that queue a verse for relearning  |
 
 ### Exercise generation
 
@@ -243,12 +273,17 @@ round-robin **by verse** so a user never grinds the same verse back to back.
 
 ```
 src/
-  data/verses.ts            The verse bank — hardcoded, not in the DB
+  data/verses.ts            Loads + validates the bank; the only way in
+  data/translations/        One JSON file per translation, plus catalog.ts
   db/schema.sql             Tables; applied at boot, all IF NOT EXISTS
   db/client.ts              Connection, row types, migrate()
   lib/dates.ts              Timezone-aware day boundaries
+  lib/translation.ts        Resolves the translation for a request
+  lib/words.ts              Shared word splitting (tiles + validator)
   middleware/auth.ts        JWT sign/verify, requireAuth
-  routes/                   auth, session, verses, me
+  routes/                   auth, session, verses, me, translations
+scripts/
+  fetch-translation.ts      Author-time: pull a translation's text
   services/
     stageMachine.ts         Stage/streak/schedule transitions + constants
     slotRefill.ts           Slot fill and relearning priority
@@ -276,8 +311,15 @@ Domain rules belong in `services/`.
 | `POST`  | `/api/session/complete` | Log the session, top up any empty slots         |
 | `GET`   | `/api/verses`           | Full bank with per-user status                  |
 | `GET`   | `/api/verses/:id`       | One verse + that user's history                 |
+| `GET`   | `/api/translations`     | Translations a user can pick between            |
 | `GET`   | `/api/me`               | Profile, streak, slot state                     |
-| `PATCH` | `/api/me`               | Update timezone                                 |
+| `PATCH` | `/api/me`               | Update timezone and/or translation              |
+
+`GET /api/verses`, `/api/verses/:id` and `/api/session/today` accept an optional
+`?translation=CODE` override and echo back the `translation` they served. `PATCH
+/api/me` takes `timezone`, `translation`, or both — at least one is required, and
+an unknown value for either is a `400`. `POST /auth/signup` accepts an optional
+`translation` alongside `timezone`.
 
 Browse statuses are `locked` / `active` / `review` / `mastered`, with
 `graduatedAt` alongside so the UI can badge graduation as an achievement.
@@ -291,26 +333,51 @@ timezone — calling it twice won't double-count toward the streak.
 
 ### Adding verses
 
-Append to `VERSES` in [`src/data/verses.ts`](./src/data/verses.ts):
+A verse has to be added to **every** translation file or the server won't boot.
+Append the same record to each of `src/data/translations/*.json`, varying only
+`text` and `decoys`:
 
-```ts
+```json
 {
-  id: 'phil-4-6',              // stable slug
-  reference: 'Philippians 4:6',
-  text: 'Do not be anxious about anything, ...',
-  order: 1,                    // 1..N, unique, contiguous
-  decoys: ['worried', 'nothing', 'fasting', ...],  // 6-10 plausible wrong words
+  "id": "phil-4-6",
+  "reference": "Philippians 4:6",
+  "order": 100,
+  "text": "In nothing be anxious, but in everything, by prayer and petition ...",
+  "decoys": ["worried", "fasting", "supplication", "..."]
 }
 ```
 
-Three invariants the app depends on:
+Invariants the app depends on:
 
 1. **`id` must never change once a user has progress against it.**
    `user_verse.verse_id` stores it verbatim with no foreign key, so a renamed
    slug silently orphans that user's history.
-2. `order` drives slot refill. Keep it unique and contiguous.
-3. `decoys` should be plausible for _that verse_ — they're what makes tile
-   exercises non-trivial.
+2. `order` drives slot refill. Keep it unique, contiguous, and **identical in
+   every translation** — it is what makes switching translation lossless.
+3. `id`, `reference` and `order` must match the WEB file exactly. The validator
+   reports every mismatch by id at startup.
+4. `decoys` should be plausible for _that verse in that translation_ — they're
+   what makes tile exercises non-trivial. A decoy that already appears in its own
+   verse's text is rejected: it would be a correct tile.
+5. Place the record in WEB in canonical Bible order; that file's layout is what
+   `?orderBy=canon` returns for every translation.
+
+### Adding a translation
+
+1. Fetch the text: `npx tsx scripts/fetch-translation.ts <code>`. It walks the
+   WEB file's references against bible-api.com, copies each `id` and `order`
+   verbatim, and writes `src/data/translations/<code>.json` with empty decoys.
+   Author-time only — nothing fetches at runtime.
+2. Write a decoy pool for each verse, in that translation's own vocabulary.
+3. Add an entry to `TRANSLATIONS` in
+   [`src/data/translations/catalog.ts`](./src/data/translations/catalog.ts) with
+   the code, display name, filename, and a licensing note.
+4. Start the server. A mismatch against WEB, or a decoy that appears in its own
+   verse, fails the boot with the offending ids named.
+
+`code` is stored verbatim in `users.translation`, so it must not change once
+users have selected it. Removing a translation is safe — accounts pointing at it
+fall back to the default.
 
 ### Tuning the algorithm
 
@@ -351,10 +418,15 @@ export or backup step, so treat this as destructive.
 ### Changing the schema
 
 There is **no migration tooling.** `schema.sql` is all `IF NOT EXISTS` and runs at
-every boot, so new tables and indexes apply themselves — but altering or dropping
-an existing column needs a manual `ALTER TABLE` against the live file. Adding a
-non-`.ts` file under `src/` also means updating the `build` script, which copies
-`schema.sql` into `dist/` by hand.
+every boot, so new tables and indexes apply themselves — but it is inert against a
+table that already exists. Adding a column therefore means two edits: the column
+in `schema.sql` (for fresh databases) and an `addColumnIfMissing()` call in
+`migrate()` (for existing ones). It is idempotent and needs a non-null default so
+existing rows backfill; `users.translation` is the worked example. Altering or
+dropping a column still needs a manual `ALTER TABLE` against the live file.
+
+Adding a non-`.ts` file under `src/` also means updating the `build` script, which
+copies `schema.sql` and `data/translations/*.json` into `dist/` by hand.
 
 `migrate()` refuses to open a database written before the progression rewrite
 (one with a `review_schedule` table or a `user_verse.strength` column) rather
@@ -370,7 +442,12 @@ and `tsc` will point at every switch and lookup table that needs the new case.
 - **Grading is client-side.** `POST /api/attempt` takes `correct` as a boolean
   from the client, so the client needs the answer key and can grade against the
   text from `GET /api/verses`. Moving grading server-side means changing that
-  request to carry the submitted words.
+  request to carry the submitted words — and, now, the translation they were
+  graded against.
+- **An exercise's blanks follow the text, not the translation code.** The PRNG
+  seed is `verseId:stage:instance`, deliberately translation-free, so switching
+  mid-session doesn't reshuffle a verse the user is partway through; the blanks
+  differ anyway because they're chosen from the resolved wording.
 - **Timezone drives every day boundary** — due dates, streaks, and session
   idempotency all go through `lib/dates.ts` using `users.timezone`. Don't compare
   raw timestamps for "same day".
@@ -389,4 +466,4 @@ and `tsc` will point at every switch and lookup table that needs the new case.
 ### Not built (out of scope for v1)
 
 Push notifications · multiple verse sets · admin UI for verses · password reset ·
-Postgres migration.
+Postgres migration · per-verse translation overrides.

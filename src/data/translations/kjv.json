@@ -1,0 +1,1636 @@
+[
+  {
+    "id": "gen-1-1",
+    "reference": "Genesis 1:1",
+    "order": 1,
+    "text": "In the beginning God created the heaven and the earth.",
+    "decoys": [
+      "firmament",
+      "formed",
+      "ground",
+      "world",
+      "ending",
+      "void",
+      "made",
+      "waters"
+    ]
+  },
+  {
+    "id": "gen-1-26",
+    "reference": "Genesis 1:26",
+    "order": 12,
+    "text": "And God said, Let us make man in our image, after our likeness: and let them have dominion over the fish of the sea, and over the fowl of the air, and over the cattle, and over all the earth, and over every creeping thing that creepeth upon the earth.",
+    "decoys": [
+      "mankind",
+      "form",
+      "authority",
+      "beasts",
+      "creatures",
+      "heavens",
+      "crawling",
+      "ground",
+      "birds"
+    ]
+  },
+  {
+    "id": "gen-3-6-7",
+    "reference": "Genesis 3:6-7",
+    "order": 32,
+    "text": "And when the woman saw that the tree was good for food, and that it was pleasant to the eyes, and a tree to be desired to make one wise, she took of the fruit thereof, and did eat, and gave also unto her husband with her; and he did eat. And the eyes of them both were opened, and they knew that they were naked; and they sewed fig leaves together, and made themselves aprons.",
+    "decoys": [
+      "serpent",
+      "garden",
+      "sight",
+      "longed",
+      "clever",
+      "tasted",
+      "ashamed",
+      "garments",
+      "coverings"
+    ]
+  },
+  {
+    "id": "exod-3-14-15",
+    "reference": "Exodus 3:14-15",
+    "order": 2,
+    "text": "And God said unto Moses, I AM THAT I AM: and he said, Thus shalt thou say unto the children of Israel, I AM hath sent me unto you. And God said moreover unto Moses, Thus shalt thou say unto the children of Israel, The LORD God of your fathers, the God of Abraham, the God of Isaac, and the God of Jacob, hath sent me unto you: this is my name for ever, and this is my memorial unto all generations.",
+    "decoys": [
+      "Aaron",
+      "Egypt",
+      "Abram",
+      "Isaiah",
+      "Joseph",
+      "title",
+      "always",
+      "ages",
+      "remembrance"
+    ]
+  },
+  {
+    "id": "deut-6-4-5",
+    "reference": "Deuteronomy 6:4-5",
+    "order": 3,
+    "text": "Hear, O Israel: The LORD our God is one LORD: And thou shalt love the LORD thy God with all thine heart, and with all thy soul, and with all thy might.",
+    "decoys": [
+      "Listen",
+      "Judah",
+      "obey",
+      "mind",
+      "spirit",
+      "strength",
+      "cherish",
+      "power"
+    ]
+  },
+  {
+    "id": "ps-90-2",
+    "reference": "Psalm 90:2",
+    "order": 5,
+    "text": "Before the mountains were brought forth, or ever thou hadst formed the earth and the world, even from everlasting to everlasting, thou art God.",
+    "decoys": [
+      "hills",
+      "made",
+      "created",
+      "land",
+      "universe",
+      "eternal",
+      "LORD",
+      "fashioned"
+    ]
+  },
+  {
+    "id": "ps-119-105",
+    "reference": "Psalm 119:105",
+    "order": 26,
+    "text": "Thy word is a lamp unto my feet, and a light unto my path.",
+    "decoys": [
+      "law",
+      "torch",
+      "steps",
+      "guide",
+      "way",
+      "candle",
+      "road",
+      "statutes"
+    ]
+  },
+  {
+    "id": "ps-139-7-10",
+    "reference": "Psalm 139:7-10",
+    "order": 8,
+    "text": "Whither shall I go from thy spirit? or whither shall I flee from thy presence? If I ascend up into heaven, thou art there: if I make my bed in hell, behold, thou art there. If I take the wings of the morning, and dwell in the uttermost parts of the sea; Even there shall thy hand lead me, and thy right hand shall hold me.",
+    "decoys": [
+      "escape",
+      "hide",
+      "face",
+      "rise",
+      "firmament",
+      "feathers",
+      "dawn",
+      "ocean",
+      "arm",
+      "guide"
+    ]
+  },
+  {
+    "id": "isa-9-6",
+    "reference": "Isaiah 9:6",
+    "order": 20,
+    "text": "For unto us a child is born, unto us a son is given: and the government shall be upon his shoulder: and his name shall be called Wonderful, Counsellor, The mighty God, The everlasting Father, The Prince of Peace.",
+    "decoys": [
+      "babe",
+      "king",
+      "kingdom",
+      "arms",
+      "Marvellous",
+      "Advisor",
+      "Strong",
+      "Eternal",
+      "Ruler",
+      "Lord"
+    ]
+  },
+  {
+    "id": "isa-46-9-10",
+    "reference": "Isaiah 46:9-10",
+    "order": 4,
+    "text": "Remember the former things of old: for I am God, and there is none else; I am God, and there is none like me, Declaring the end from the beginning, and from ancient times the things that are not yet done, saying, My counsel shall stand, and I will do all my pleasure:",
+    "decoys": [
+      "Forget",
+      "latter",
+      "LORD",
+      "announce",
+      "ending",
+      "purpose",
+      "fall",
+      "desire",
+      "decree"
+    ]
+  },
+  {
+    "id": "isa-53-5-6",
+    "reference": "Isaiah 53:5-6",
+    "order": 45,
+    "text": "But he was wounded for our transgressions, he was bruised for our iniquities: the chastisement of our peace was upon him; and with his stripes we are healed. All we like sheep have gone astray; we have turned every one to his own way; and the LORD hath laid on him the iniquity of us all.",
+    "decoys": [
+      "pierced",
+      "sins",
+      "crushed",
+      "guilt",
+      "punishment",
+      "scourging",
+      "forgiven",
+      "lambs",
+      "wandered",
+      "path"
+    ]
+  },
+  {
+    "id": "isa-64-6",
+    "reference": "Isaiah 64:6",
+    "order": 30,
+    "text": "But we are all as an unclean thing, and all our righteousnesses are as filthy rags; and we all do fade as a leaf; and our iniquities, like the wind, have taken us away.",
+    "decoys": [
+      "sinful",
+      "holiness",
+      "robe",
+      "wither",
+      "flower",
+      "sins",
+      "storm",
+      "garments",
+      "defiled"
+    ]
+  },
+  {
+    "id": "jer-17-9",
+    "reference": "Jeremiah 17:9",
+    "order": 31,
+    "text": "The heart is deceitful above all things, and desperately wicked: who can know it?",
+    "decoys": [
+      "mind",
+      "treacherous",
+      "understand",
+      "evil",
+      "sick",
+      "soul",
+      "corrupt",
+      "froward"
+    ]
+  },
+  {
+    "id": "ezek-36-26-27",
+    "reference": "Ezekiel 36:26-27",
+    "order": 62,
+    "text": "A new heart also will I give you, and a new spirit will I put within you: and I will take away the stony heart out of your flesh, and I will give you an heart of flesh. And I will put my spirit within you, and cause you to walk in my statutes, and ye shall keep my judgments, and do them.",
+    "decoys": [
+      "mind",
+      "soul",
+      "hardened",
+      "body",
+      "wisdom",
+      "commandments",
+      "laws",
+      "ordinances"
+    ]
+  },
+  {
+    "id": "mic-6-8",
+    "reference": "Micah 6:8",
+    "order": 99,
+    "text": "He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?",
+    "decoys": [
+      "told",
+      "right",
+      "demand",
+      "fairly",
+      "cherish",
+      "kindness",
+      "live",
+      "meekly",
+      "declared"
+    ]
+  },
+  {
+    "id": "mal-3-6",
+    "reference": "Malachi 3:6",
+    "order": 6,
+    "text": "For I am the LORD, I change not; therefore ye sons of Jacob are not consumed.",
+    "decoys": [
+      "waver",
+      "children",
+      "Israel",
+      "destroyed",
+      "forsaken",
+      "alter",
+      "seed",
+      "devoured"
+    ]
+  },
+  {
+    "id": "matt-6-9-13",
+    "reference": "Matthew 6:9-13",
+    "order": 83,
+    "text": "After this manner therefore pray ye: Our Father which art in heaven, Hallowed be thy name. Thy kingdom come. Thy will be done in earth, as it is in heaven. Give us this day our daily bread. And forgive us our debts, as we forgive our debtors. And lead us not into temptation, but deliver us from evil: For thine is the kingdom, and the power, and the glory, for ever. Amen.",
+    "decoys": [
+      "LORD",
+      "firmament",
+      "title",
+      "sacred",
+      "reign",
+      "ground",
+      "pardon",
+      "trespasses",
+      "trial",
+      "sinners"
+    ]
+  },
+  {
+    "id": "matt-16-18",
+    "reference": "Matthew 16:18",
+    "order": 75,
+    "text": "And I say also unto thee, That thou art Peter, and upon this rock I will build my church; and the gates of hell shall not prevail against it.",
+    "decoys": [
+      "Simon",
+      "stone",
+      "establish",
+      "congregation",
+      "doors",
+      "grave",
+      "overcome",
+      "temple"
+    ]
+  },
+  {
+    "id": "matt-22-37-39",
+    "reference": "Matthew 22:37-39",
+    "order": 96,
+    "text": "Jesus said unto him, Thou shalt love the Lord thy God with all thy heart, and with all thy soul, and with all thy mind. This is the first and great commandment. And the second is like unto it, Thou shalt love thy neighbour as thyself.",
+    "decoys": [
+      "cherish",
+      "spirit",
+      "strength",
+      "law",
+      "friend",
+      "others",
+      "might",
+      "statute"
+    ]
+  },
+  {
+    "id": "matt-25-46",
+    "reference": "Matthew 25:46",
+    "order": 91,
+    "text": "And these shall go away into everlasting punishment: but the righteous into life eternal.",
+    "decoys": [
+      "judgment",
+      "holy",
+      "existence",
+      "endless",
+      "doom",
+      "torment",
+      "just",
+      "perpetual"
+    ]
+  },
+  {
+    "id": "matt-28-19",
+    "reference": "Matthew 28:19",
+    "order": 9,
+    "text": "Go ye therefore, and teach all nations, baptizing them in the name of the Father, and of the Son, and of the Holy Ghost:",
+    "decoys": [
+      "disciples",
+      "peoples",
+      "anointing",
+      "LORD",
+      "Christ",
+      "Spirit",
+      "gentiles",
+      "washing"
+    ]
+  },
+  {
+    "id": "matt-28-19-20",
+    "reference": "Matthew 28:19-20",
+    "order": 79,
+    "text": "Go ye therefore, and teach all nations, baptizing them in the name of the Father, and of the Son, and of the Holy Ghost: Teaching them to observe all things whatsoever I have commanded you: and, lo, I am with you alway, even unto the end of the world. Amen.",
+    "decoys": [
+      "disciples",
+      "peoples",
+      "anointing",
+      "LORD",
+      "Christ",
+      "Spirit",
+      "instructing",
+      "obey",
+      "ordered",
+      "age"
+    ]
+  },
+  {
+    "id": "mark-1-15",
+    "reference": "Mark 1:15",
+    "order": 56,
+    "text": "And saying, The time is fulfilled, and the kingdom of God is at hand: repent ye, and believe the gospel.",
+    "decoys": [
+      "hour",
+      "completed",
+      "reign",
+      "Return",
+      "trust",
+      "tidings",
+      "season",
+      "nigh"
+    ]
+  },
+  {
+    "id": "luke-13-3",
+    "reference": "Luke 13:3",
+    "order": 59,
+    "text": "I tell you, Nay: but, except ye repent, ye shall all likewise perish.",
+    "decoys": [
+      "believe",
+      "die",
+      "manner",
+      "similarly",
+      "vanish",
+      "turn",
+      "surely"
+    ]
+  },
+  {
+    "id": "john-1-1-3",
+    "reference": "John 1:1-3",
+    "order": 13,
+    "text": "In the beginning was the Word, and the Word was with God, and the Word was God. The same was in the beginning with God. All things were made by him; and without him was not any thing made that was made.",
+    "decoys": [
+      "start",
+      "Light",
+      "LORD",
+      "created",
+      "everything",
+      "formed",
+      "nothing",
+      "Son"
+    ]
+  },
+  {
+    "id": "john-1-14",
+    "reference": "John 1:14",
+    "order": 21,
+    "text": "And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth.",
+    "decoys": [
+      "Light",
+      "body",
+      "tabernacled",
+      "splendour",
+      "Child",
+      "LORD",
+      "mercy",
+      "wisdom"
+    ]
+  },
+  {
+    "id": "john-3-3",
+    "reference": "John 3:3",
+    "order": 60,
+    "text": "Jesus answered and said unto him, Verily, verily, I say unto thee, Except a man be born again, he cannot see the kingdom of God.",
+    "decoys": [
+      "truly",
+      "begotten",
+      "anew",
+      "reign",
+      "enter",
+      "behold",
+      "above",
+      "Master"
+    ]
+  },
+  {
+    "id": "john-3-16",
+    "reference": "John 3:16",
+    "order": 36,
+    "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+    "decoys": [
+      "cherished",
+      "earth",
+      "sent",
+      "Child",
+      "trusteth",
+      "die",
+      "eternal",
+      "beloved"
+    ]
+  },
+  {
+    "id": "john-8-58",
+    "reference": "John 8:58",
+    "order": 14,
+    "text": "Jesus said unto them, Verily, verily, I say unto you, Before Abraham was, I am.",
+    "decoys": [
+      "Christ",
+      "truly",
+      "Moses",
+      "birth",
+      "eternity",
+      "surely",
+      "Isaac",
+      "spake"
+    ]
+  },
+  {
+    "id": "john-10-27-29",
+    "reference": "John 10:27-29",
+    "order": 71,
+    "text": "My sheep hear my voice, and I know them, and they follow me: And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand. My Father, which gave them me, is greater than all; and no man is able to pluck them out of my Father’s hand.",
+    "decoys": [
+      "flock",
+      "sound",
+      "obey",
+      "everlasting",
+      "existence",
+      "die",
+      "seize",
+      "arm",
+      "LORD",
+      "mightier"
+    ]
+  },
+  {
+    "id": "john-14-3",
+    "reference": "John 14:3",
+    "order": 85,
+    "text": "And if I go and prepare a place for you, I will come again, and receive you unto myself; that where I am, there ye may be also.",
+    "decoys": [
+      "build",
+      "mansion",
+      "return",
+      "welcome",
+      "thyself",
+      "promise",
+      "room",
+      "abide"
+    ]
+  },
+  {
+    "id": "john-14-6",
+    "reference": "John 14:6",
+    "order": 53,
+    "text": "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me.",
+    "decoys": [
+      "door",
+      "light",
+      "hope",
+      "LORD",
+      "Master",
+      "mercy",
+      "path",
+      "vine"
+    ]
+  },
+  {
+    "id": "john-14-16-17",
+    "reference": "John 14:16-17",
+    "order": 11,
+    "text": "And I will pray the Father, and he shall give you another Comforter, that he may abide with you for ever; Even the Spirit of truth; whom the world cannot receive, because it seeth him not, neither knoweth him: but ye know him; for he dwelleth with you, and shall be in you.",
+    "decoys": [
+      "ask",
+      "Advocate",
+      "always",
+      "wisdom",
+      "earth",
+      "accept",
+      "understand",
+      "tarry",
+      "Helper"
+    ]
+  },
+  {
+    "id": "john-16-13",
+    "reference": "John 16:13",
+    "order": 63,
+    "text": "Howbeit when he, the Spirit of truth, is come, he will guide you into all truth: for he shall not speak of himself; but whatsoever he shall hear, that shall he speak: and he will shew you things to come.",
+    "decoys": [
+      "wisdom",
+      "light",
+      "lead",
+      "teach",
+      "seeth",
+      "proclaim",
+      "hereafter",
+      "declare"
+    ]
+  },
+  {
+    "id": "john-17-3",
+    "reference": "John 17:3",
+    "order": 94,
+    "text": "And this is life eternal, that they might know thee the only true God, and Jesus Christ, whom thou hast sent.",
+    "decoys": [
+      "everlasting",
+      "existence",
+      "understand",
+      "real",
+      "LORD",
+      "given",
+      "Saviour",
+      "begotten"
+    ]
+  },
+  {
+    "id": "john-17-17",
+    "reference": "John 17:17",
+    "order": 70,
+    "text": "Sanctify them through thy truth: thy word is truth.",
+    "decoys": [
+      "Purify",
+      "wisdom",
+      "law",
+      "Cleanse",
+      "holiness",
+      "promise",
+      "statutes",
+      "Hallow"
+    ]
+  },
+  {
+    "id": "john-20-28",
+    "reference": "John 20:28",
+    "order": 19,
+    "text": "And Thomas answered and said unto him, My Lord and my God.",
+    "decoys": [
+      "Peter",
+      "Master",
+      "King",
+      "Saviour",
+      "Teacher",
+      "Rabbi",
+      "Simon",
+      "Christ"
+    ]
+  },
+  {
+    "id": "acts-1-11",
+    "reference": "Acts 1:11",
+    "order": 86,
+    "text": "Which also said, Ye men of Galilee, why stand ye gazing up into heaven? this same Jesus, which is taken up from you into heaven, shall so come in like manner as ye have seen him go into heaven.",
+    "decoys": [
+      "Judea",
+      "sit",
+      "staring",
+      "firmament",
+      "Christ",
+      "received",
+      "return",
+      "brethren"
+    ]
+  },
+  {
+    "id": "acts-2-38",
+    "reference": "Acts 2:38",
+    "order": 57,
+    "text": "Then Peter said unto them, Repent, and be baptized every one of you in the name of Jesus Christ for the remission of sins, and ye shall receive the gift of the Holy Ghost.",
+    "decoys": [
+      "Believe",
+      "washed",
+      "title",
+      "Master",
+      "Saviour",
+      "pardon",
+      "transgressions",
+      "obtain",
+      "blessing",
+      "Spirit"
+    ]
+  },
+  {
+    "id": "acts-2-42",
+    "reference": "Acts 2:42",
+    "order": 77,
+    "text": "And they continued stedfastly in the apostles’ doctrine and fellowship, and in breaking of bread, and in prayers.",
+    "decoys": [
+      "faithfully",
+      "disciples",
+      "teaching",
+      "communion",
+      "sharing",
+      "wine",
+      "worship",
+      "brethren"
+    ]
+  },
+  {
+    "id": "acts-4-12",
+    "reference": "Acts 4:12",
+    "order": 54,
+    "text": "Neither is there salvation in any other: for there is none other name under heaven given among men, whereby we must be saved.",
+    "decoys": [
+      "redemption",
+      "title",
+      "earth",
+      "mankind",
+      "healed",
+      "grace",
+      "deliverance",
+      "hope"
+    ]
+  },
+  {
+    "id": "acts-16-31",
+    "reference": "Acts 16:31",
+    "order": 38,
+    "text": "And they said, Believe on the Lord Jesus Christ, and thou shalt be saved, and thy house.",
+    "decoys": [
+      "Trust",
+      "Master",
+      "Saviour",
+      "King",
+      "healed",
+      "family",
+      "household",
+      "kindred"
+    ]
+  },
+  {
+    "id": "acts-17-30",
+    "reference": "Acts 17:30",
+    "order": 58,
+    "text": "And the times of this ignorance God winked at; but now commandeth all men every where to repent:",
+    "decoys": [
+      "unbelief",
+      "forgave",
+      "requireth",
+      "nations",
+      "believe",
+      "overlooked",
+      "days",
+      "turn"
+    ]
+  },
+  {
+    "id": "rom-1-4",
+    "reference": "Romans 1:4",
+    "order": 52,
+    "text": "And declared to be the Son of God with power, according to the spirit of holiness, by the resurrection from the dead:",
+    "decoys": [
+      "proven",
+      "Child",
+      "glory",
+      "wisdom",
+      "purity",
+      "raising",
+      "grave",
+      "Master"
+    ]
+  },
+  {
+    "id": "rom-3-10-12",
+    "reference": "Romans 3:10-12",
+    "order": 29,
+    "text": "As it is written, There is none righteous, no, not one: There is none that understandeth, there is none that seeketh after God. They are all gone out of the way, they are together become unprofitable; there is none that doeth good, no, not one.",
+    "decoys": [
+      "holy",
+      "believeth",
+      "searcheth",
+      "fallen",
+      "worthless",
+      "right",
+      "turned",
+      "spoken"
+    ]
+  },
+  {
+    "id": "rom-3-23",
+    "reference": "Romans 3:23",
+    "order": 28,
+    "text": "For all have sinned, and come short of the glory of God;",
+    "decoys": [
+      "transgressed",
+      "splendour",
+      "LORD",
+      "failed",
+      "honour",
+      "broken",
+      "fallen",
+      "righteousness"
+    ]
+  },
+  {
+    "id": "rom-4-4-5",
+    "reference": "Romans 4:4-5",
+    "order": 41,
+    "text": "Now to him that worketh is the reward not reckoned of grace, but of debt. But to him that worketh not, but believeth on him that justifieth the ungodly, his faith is counted for righteousness.",
+    "decoys": [
+      "labourer",
+      "wages",
+      "mercy",
+      "trusteth",
+      "saveth",
+      "wicked",
+      "belief",
+      "holiness"
+    ]
+  },
+  {
+    "id": "rom-4-25",
+    "reference": "Romans 4:25",
+    "order": 51,
+    "text": "Who was delivered for our offences, and was raised again for our justification.",
+    "decoys": [
+      "given",
+      "sins",
+      "resurrected",
+      "righteousness",
+      "restored",
+      "guilt",
+      "trespasses",
+      "sanctification"
+    ]
+  },
+  {
+    "id": "rom-5-1",
+    "reference": "Romans 5:1",
+    "order": 40,
+    "text": "Therefore being justified by faith, we have peace with God through our Lord Jesus Christ:",
+    "decoys": [
+      "sanctified",
+      "belief",
+      "joy",
+      "Master",
+      "Saviour",
+      "King",
+      "mercy",
+      "redeemed"
+    ]
+  },
+  {
+    "id": "rom-5-8",
+    "reference": "Romans 5:8",
+    "order": 46,
+    "text": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.",
+    "decoys": [
+      "proveth",
+      "mercy",
+      "enemies",
+      "Jesus",
+      "suffered",
+      "grace",
+      "ungodly",
+      "sheweth"
+    ]
+  },
+  {
+    "id": "rom-5-12",
+    "reference": "Romans 5:12",
+    "order": 33,
+    "text": "Wherefore, as by one man sin entered into the world, and death by sin; and so death passed upon all men, for that all have sinned:",
+    "decoys": [
+      "evil",
+      "earth",
+      "Adam",
+      "judgment",
+      "transgression",
+      "guilt",
+      "came",
+      "grave"
+    ]
+  },
+  {
+    "id": "rom-6-3-4",
+    "reference": "Romans 6:3-4",
+    "order": 81,
+    "text": "Know ye not, that so many of us as were baptized into Jesus Christ were baptized into his death? Therefore we are buried with him by baptism into death: that like as Christ was raised up from the dead by the glory of the Father, even so we also should walk in newness of life.",
+    "decoys": [
+      "washed",
+      "grave",
+      "entombed",
+      "resurrected",
+      "splendour",
+      "LORD",
+      "freshness",
+      "existence"
+    ]
+  },
+  {
+    "id": "rom-6-23",
+    "reference": "Romans 6:23",
+    "order": 35,
+    "text": "For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord.",
+    "decoys": [
+      "penalty",
+      "disobedience",
+      "judgment",
+      "reward",
+      "everlasting",
+      "Saviour",
+      "King",
+      "Master"
+    ]
+  },
+  {
+    "id": "rom-8-9",
+    "reference": "Romans 8:9",
+    "order": 64,
+    "text": "But ye are not in the flesh, but in the Spirit, if so be that the Spirit of God dwell in you. Now if any man have not the Spirit of Christ, he is none of his.",
+    "decoys": [
+      "body",
+      "soul",
+      "LORD",
+      "liveth",
+      "Jesus",
+      "abide",
+      "carnal",
+      "tabernacle"
+    ]
+  },
+  {
+    "id": "rom-8-29",
+    "reference": "Romans 8:29",
+    "order": 69,
+    "text": "For whom he did foreknow, he also did predestinate to be conformed to the image of his Son, that he might be the firstborn among many brethren.",
+    "decoys": [
+      "chose",
+      "ordained",
+      "shaped",
+      "likeness",
+      "Child",
+      "firstfruits",
+      "kindred",
+      "appointed"
+    ]
+  },
+  {
+    "id": "rom-8-38-39",
+    "reference": "Romans 8:38-39",
+    "order": 72,
+    "text": "For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers, nor things present, nor things to come, Nor height, nor depth, nor any other creature, shall be able to separate us from the love of God, which is in Christ Jesus our Lord.",
+    "decoys": [
+      "convinced",
+      "dying",
+      "existence",
+      "spirits",
+      "rulers",
+      "future",
+      "forces",
+      "deep",
+      "divide",
+      "dominions"
+    ]
+  },
+  {
+    "id": "rom-10-9-10",
+    "reference": "Romans 10:9-10",
+    "order": 39,
+    "text": "That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved. For with the heart man believeth unto righteousness; and with the mouth confession is made unto salvation.",
+    "decoys": [
+      "proclaim",
+      "lips",
+      "Christ",
+      "Master",
+      "trust",
+      "mind",
+      "resurrected",
+      "grave",
+      "holiness",
+      "redemption"
+    ]
+  },
+  {
+    "id": "rom-12-1-2",
+    "reference": "Romans 12:1-2",
+    "order": 97,
+    "text": "I beseech you therefore, brethren, by the mercies of God, that ye present your bodies a living sacrifice, holy, acceptable unto God, which is your reasonable service. And be not conformed to this world: but be ye transformed by the renewing of your mind, that ye may prove what is that good, and acceptable, and perfect, will of God.",
+    "decoys": [
+      "entreat",
+      "grace",
+      "offer",
+      "lives",
+      "offering",
+      "sacred",
+      "pleasing",
+      "shaped",
+      "reviving",
+      "worship"
+    ]
+  },
+  {
+    "id": "1cor-2-9",
+    "reference": "1 Corinthians 2:9",
+    "order": 95,
+    "text": "But as it is written, Eye hath not seen, nor ear heard, neither have entered into the heart of man, the things which God hath prepared for them that love him.",
+    "decoys": [
+      "sight",
+      "hearing",
+      "mind",
+      "mankind",
+      "planned",
+      "believe",
+      "imagined",
+      "conceived"
+    ]
+  },
+  {
+    "id": "1cor-3-16",
+    "reference": "1 Corinthians 3:16",
+    "order": 65,
+    "text": "Know ye not that ye are the temple of God, and that the Spirit of God dwelleth in you?",
+    "decoys": [
+      "LORD",
+      "wisdom",
+      "sanctuary",
+      "tabernacle",
+      "house",
+      "abideth",
+      "body",
+      "building"
+    ]
+  },
+  {
+    "id": "1cor-11-23-26",
+    "reference": "1 Corinthians 11:23-26",
+    "order": 80,
+    "text": "For I have received of the Lord that which also I delivered unto you, That the Lord Jesus the same night in which he was betrayed took bread: And when he had given thanks, he brake it, and said, Take, eat: this is my body, which is broken for you: this do in remembrance of me. After the same manner also he took the cup, when he had supped, saying, This cup is the new testament in my blood: this do ye, as oft as ye drink it, in remembrance of me. For as often as ye eat this bread, and drink this cup, ye do shew the Lord’s death till he come.",
+    "decoys": [
+      "Master",
+      "arrested",
+      "wine",
+      "praise",
+      "flesh",
+      "chalice",
+      "promise",
+      "announce",
+      "gathered",
+      "covenant"
+    ]
+  },
+  {
+    "id": "1cor-15-3-4",
+    "reference": "1 Corinthians 15:3-4",
+    "order": 49,
+    "text": "For I delivered unto you first of all that which I also received, how that Christ died for our sins according to the scriptures; And that he was buried, and that he rose again the third day according to the scriptures:",
+    "decoys": [
+      "taught",
+      "learned",
+      "Jesus",
+      "suffered",
+      "transgressions",
+      "prophets",
+      "entombed",
+      "risen"
+    ]
+  },
+  {
+    "id": "1cor-15-17",
+    "reference": "1 Corinthians 15:17",
+    "order": 50,
+    "text": "And if Christ be not raised, your faith is vain; ye are yet in your sins.",
+    "decoys": [
+      "Jesus",
+      "risen",
+      "belief",
+      "useless",
+      "transgressions",
+      "empty",
+      "worthless",
+      "Lord"
+    ]
+  },
+  {
+    "id": "2cor-5-17",
+    "reference": "2 Corinthians 5:17",
+    "order": 61,
+    "text": "Therefore if any man be in Christ, he is a new creature: old things are passed away; behold, all things are become new.",
+    "decoys": [
+      "Jesus",
+      "creation",
+      "former",
+      "vanished",
+      "renewed",
+      "reborn",
+      "ancient",
+      "made"
+    ]
+  },
+  {
+    "id": "2cor-5-21",
+    "reference": "2 Corinthians 5:21",
+    "order": 42,
+    "text": "For he hath made him to be sin for us, who knew no sin; that we might be made the righteousness of God in him.",
+    "decoys": [
+      "transgression",
+      "holiness",
+      "LORD",
+      "guilt",
+      "mercy",
+      "sinless",
+      "offering",
+      "reckoned"
+    ]
+  },
+  {
+    "id": "2cor-13-14",
+    "reference": "2 Corinthians 13:14",
+    "order": 10,
+    "text": "The grace of the Lord Jesus Christ, and the love of God, and the communion of the Holy Ghost, be with you all. Amen.",
+    "decoys": [
+      "mercy",
+      "King",
+      "Master",
+      "kindness",
+      "fellowship",
+      "Spirit",
+      "peace",
+      "favour"
+    ]
+  },
+  {
+    "id": "gal-2-16",
+    "reference": "Galatians 2:16",
+    "order": 43,
+    "text": "Knowing that a man is not justified by the works of the law, but by the faith of Jesus Christ, even we have believed in Jesus Christ, that we might be justified by the faith of Christ, and not by the works of the law: for by the works of the law shall no flesh be justified.",
+    "decoys": [
+      "saved",
+      "deeds",
+      "commandments",
+      "belief",
+      "Saviour",
+      "Master",
+      "trusted",
+      "body"
+    ]
+  },
+  {
+    "id": "gal-2-20",
+    "reference": "Galatians 2:20",
+    "order": 98,
+    "text": "I am crucified with Christ: nevertheless I live; yet not I, but Christ liveth in me: and the life which I now live in the flesh I live by the faith of the Son of God, who loved me, and gave himself for me.",
+    "decoys": [
+      "killed",
+      "Jesus",
+      "dwell",
+      "body",
+      "belief",
+      "Child",
+      "LORD",
+      "cherished",
+      "sacrificed"
+    ]
+  },
+  {
+    "id": "gal-5-22-23",
+    "reference": "Galatians 5:22-23",
+    "order": 66,
+    "text": "But the fruit of the Spirit is love, joy, peace, longsuffering, gentleness, goodness, faith, Meekness, temperance: against such there is no law.",
+    "decoys": [
+      "harvest",
+      "wisdom",
+      "mercy",
+      "hope",
+      "patience",
+      "kindness",
+      "virtue",
+      "belief",
+      "humility",
+      "discipline"
+    ]
+  },
+  {
+    "id": "eph-1-22-23",
+    "reference": "Ephesians 1:22-23",
+    "order": 76,
+    "text": "And hath put all things under his feet, and gave him to be the head over all things to the church, Which is his body, the fulness of him that filleth all in all.",
+    "decoys": [
+      "submission",
+      "hands",
+      "ruler",
+      "congregation",
+      "flesh",
+      "completeness",
+      "fulfilleth",
+      "dominion"
+    ]
+  },
+  {
+    "id": "eph-2-8-9",
+    "reference": "Ephesians 2:8-9",
+    "order": 34,
+    "text": "For by grace are ye saved through faith; and that not of yourselves: it is the gift of God: Not of works, lest any man should boast.",
+    "decoys": [
+      "mercy",
+      "redeemed",
+      "belief",
+      "reward",
+      "LORD",
+      "deeds",
+      "glory",
+      "earned"
+    ]
+  },
+  {
+    "id": "phil-1-6",
+    "reference": "Philippians 1:6",
+    "order": 74,
+    "text": "Being confident of this very thing, that he which hath begun a good work in you will perform it until the day of Jesus Christ:",
+    "decoys": [
+      "certain",
+      "started",
+      "task",
+      "finish",
+      "hour",
+      "Saviour",
+      "complete",
+      "Lord"
+    ]
+  },
+  {
+    "id": "phil-2-6-7",
+    "reference": "Philippians 2:6-7",
+    "order": 17,
+    "text": "Who, being in the form of God, thought it not robbery to be equal with God: But made himself of no reputation, and took upon him the form of a servant, and was made in the likeness of men:",
+    "decoys": [
+      "nature",
+      "oneness",
+      "seized",
+      "poured",
+      "slave",
+      "image",
+      "mankind",
+      "glory"
+    ]
+  },
+  {
+    "id": "phil-2-12-13",
+    "reference": "Philippians 2:12-13",
+    "order": 68,
+    "text": "Wherefore, my beloved, as ye have always obeyed, not as in my presence only, but now much more in my absence, work out your own salvation with fear and trembling. For it is God which worketh in you both to will and to do of his good pleasure.",
+    "decoys": [
+      "brethren",
+      "believed",
+      "sight",
+      "distance",
+      "redemption",
+      "awe",
+      "shaking",
+      "labour",
+      "purpose"
+    ]
+  },
+  {
+    "id": "phil-4-6-7",
+    "reference": "Philippians 4:6-7",
+    "order": 82,
+    "text": "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God. And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus.",
+    "decoys": [
+      "anxious",
+      "fasting",
+      "demand",
+      "gratitude",
+      "needs",
+      "LORD",
+      "calm",
+      "wisdom",
+      "protect",
+      "thoughts"
+    ]
+  },
+  {
+    "id": "col-2-9",
+    "reference": "Colossians 2:9",
+    "order": 15,
+    "text": "For in him dwelleth all the fulness of the Godhead bodily.",
+    "decoys": [
+      "completeness",
+      "deity",
+      "liveth",
+      "physically",
+      "glory",
+      "fully",
+      "abideth",
+      "divinity"
+    ]
+  },
+  {
+    "id": "1thess-4-3",
+    "reference": "1 Thessalonians 4:3",
+    "order": 67,
+    "text": "For this is the will of God, even your sanctification, that ye should abstain from fornication:",
+    "decoys": [
+      "purpose",
+      "LORD",
+      "holiness",
+      "refrain",
+      "sin",
+      "desire",
+      "uncleanness",
+      "keep"
+    ]
+  },
+  {
+    "id": "1thess-4-16-17",
+    "reference": "1 Thessalonians 4:16-17",
+    "order": 87,
+    "text": "For the Lord himself shall descend from heaven with a shout, with the voice of the archangel, and with the trump of God: and the dead in Christ shall rise first: Then we which are alive and remain shall be caught up together with them in the clouds, to meet the Lord in the air: and so shall we ever be with the Lord.",
+    "decoys": [
+      "Saviour",
+      "come",
+      "firmament",
+      "cry",
+      "sound",
+      "angel",
+      "horn",
+      "sleeping",
+      "wake",
+      "living"
+    ]
+  },
+  {
+    "id": "1thess-5-17",
+    "reference": "1 Thessalonians 5:17",
+    "order": 84,
+    "text": "Pray without ceasing.",
+    "decoys": [
+      "Worship",
+      "stopping",
+      "ending",
+      "resting",
+      "Ask",
+      "pausing",
+      "Beseech",
+      "fainting"
+    ]
+  },
+  {
+    "id": "2thess-1-8-9",
+    "reference": "2 Thessalonians 1:8-9",
+    "order": 92,
+    "text": "In flaming fire taking vengeance on them that know not God, and that obey not the gospel of our Lord Jesus Christ: Who shall be punished with everlasting destruction from the presence of the Lord, and from the glory of his power;",
+    "decoys": [
+      "burning",
+      "judging",
+      "believe",
+      "tidings",
+      "Master",
+      "price",
+      "ruin",
+      "splendour",
+      "might"
+    ]
+  },
+  {
+    "id": "1tim-2-5",
+    "reference": "1 Timothy 2:5",
+    "order": 23,
+    "text": "For there is one God, and one mediator between God and men, the man Christ Jesus;",
+    "decoys": [
+      "LORD",
+      "intercessor",
+      "mankind",
+      "Saviour",
+      "Teacher",
+      "Priest",
+      "advocate",
+      "judge"
+    ]
+  },
+  {
+    "id": "1tim-2-5-6",
+    "reference": "1 Timothy 2:5-6",
+    "order": 55,
+    "text": "For there is one God, and one mediator between God and men, the man Christ Jesus; Who gave himself a ransom for all, to be testified in due time.",
+    "decoys": [
+      "LORD",
+      "intercessor",
+      "mankind",
+      "Saviour",
+      "Master",
+      "payment",
+      "witness",
+      "season"
+    ]
+  },
+  {
+    "id": "2tim-3-16-17",
+    "reference": "2 Timothy 3:16-17",
+    "order": 24,
+    "text": "All scripture is given by inspiration of God, and is profitable for doctrine, for reproof, for correction, for instruction in righteousness: That the man of God may be perfect, throughly furnished unto all good works.",
+    "decoys": [
+      "teaching",
+      "rebuke",
+      "discipline",
+      "training",
+      "holiness",
+      "complete",
+      "prepared",
+      "deeds",
+      "wisdom"
+    ]
+  },
+  {
+    "id": "titus-3-5",
+    "reference": "Titus 3:5",
+    "order": 37,
+    "text": "Not by works of righteousness which we have done, but according to his mercy he saved us, by the washing of regeneration, and renewing of the Holy Ghost;",
+    "decoys": [
+      "deeds",
+      "holiness",
+      "grace",
+      "redeemed",
+      "cleansing",
+      "rebirth",
+      "transforming",
+      "Spirit"
+    ]
+  },
+  {
+    "id": "heb-1-3",
+    "reference": "Hebrews 1:3",
+    "order": 16,
+    "text": "Who being the brightness of his glory, and the express image of his person, and upholding all things by the word of his power, when he had by himself purged our sins, sat down on the right hand of the Majesty on high;",
+    "decoys": [
+      "radiance",
+      "splendour",
+      "likeness",
+      "nature",
+      "sustaining",
+      "strength",
+      "cleansed",
+      "transgressions",
+      "left",
+      "throne"
+    ]
+  },
+  {
+    "id": "heb-4-12",
+    "reference": "Hebrews 4:12",
+    "order": 27,
+    "text": "For the word of God is quick, and powerful, and sharper than any twoedged sword, piercing even to the dividing asunder of soul and spirit, and of the joints and marrow, and is a discerner of the thoughts and intents of the heart.",
+    "decoys": [
+      "living",
+      "mighty",
+      "keener",
+      "blade",
+      "cutting",
+      "separating",
+      "bones",
+      "mind",
+      "judge",
+      "purposes"
+    ]
+  },
+  {
+    "id": "heb-4-15",
+    "reference": "Hebrews 4:15",
+    "order": 22,
+    "text": "For we have not an high priest which cannot be touched with the feeling of our infirmities; but was in all points tempted like as we are, yet without sin.",
+    "decoys": [
+      "mediator",
+      "moved",
+      "sympathy",
+      "weaknesses",
+      "tried",
+      "guilt",
+      "respects",
+      "sorrows"
+    ]
+  },
+  {
+    "id": "heb-9-22",
+    "reference": "Hebrews 9:22",
+    "order": 47,
+    "text": "And almost all things are by the law purged with blood; and without shedding of blood is no remission.",
+    "decoys": [
+      "commandment",
+      "purified",
+      "water",
+      "pouring",
+      "forgiveness",
+      "cleansing",
+      "sacrifice",
+      "pardon"
+    ]
+  },
+  {
+    "id": "heb-9-27",
+    "reference": "Hebrews 9:27",
+    "order": 89,
+    "text": "And as it is appointed unto men once to die, but after this the judgment:",
+    "decoys": [
+      "destined",
+      "mankind",
+      "perish",
+      "verdict",
+      "sentence",
+      "fate",
+      "twice",
+      "reckoning"
+    ]
+  },
+  {
+    "id": "heb-10-24-25",
+    "reference": "Hebrews 10:24-25",
+    "order": 78,
+    "text": "And let us consider one another to provoke unto love and to good works: Not forsaking the assembling of ourselves together, as the manner of some is; but exhorting one another: and so much the more, as ye see the day approaching.",
+    "decoys": [
+      "stir",
+      "mercy",
+      "deeds",
+      "neglecting",
+      "gathering",
+      "habit",
+      "encouraging",
+      "hour",
+      "nearing"
+    ]
+  },
+  {
+    "id": "1pet-2-24",
+    "reference": "1 Peter 2:24",
+    "order": 44,
+    "text": "Who his own self bare our sins in his own body on the tree, that we, being dead to sins, should live unto righteousness: by whose stripes ye were healed.",
+    "decoys": [
+      "carried",
+      "transgressions",
+      "flesh",
+      "cross",
+      "holiness",
+      "saved",
+      "wounds",
+      "borne"
+    ]
+  },
+  {
+    "id": "2pet-1-20-21",
+    "reference": "2 Peter 1:20-21",
+    "order": 25,
+    "text": "Knowing this first, that no prophecy of the scripture is of any private interpretation. For the prophecy came not in old time by the will of man: but holy men of God spake as they were moved by the Holy Ghost.",
+    "decoys": [
+      "revelation",
+      "doctrine",
+      "understanding",
+      "desire",
+      "mankind",
+      "righteous",
+      "wrote",
+      "carried",
+      "Spirit"
+    ]
+  },
+  {
+    "id": "1john-2-2",
+    "reference": "1 John 2:2",
+    "order": 48,
+    "text": "And he is the propitiation for our sins: and not for ours only, but also for the sins of the whole world.",
+    "decoys": [
+      "atonement",
+      "transgressions",
+      "earth",
+      "offering",
+      "guilt",
+      "mercy",
+      "sacrifice",
+      "ransom"
+    ]
+  },
+  {
+    "id": "1john-4-8",
+    "reference": "1 John 4:8",
+    "order": 7,
+    "text": "He that loveth not knoweth not God; for God is love.",
+    "decoys": [
+      "feareth",
+      "understandeth",
+      "LORD",
+      "grace",
+      "truth",
+      "light",
+      "mercy",
+      "hope"
+    ]
+  },
+  {
+    "id": "1john-5-13",
+    "reference": "1 John 5:13",
+    "order": 73,
+    "text": "These things have I written unto you that believe on the name of the Son of God; that ye may know that ye have eternal life, and that ye may believe on the name of the Son of God.",
+    "decoys": [
+      "spoken",
+      "trust",
+      "title",
+      "Child",
+      "LORD",
+      "understand",
+      "everlasting",
+      "existence"
+    ]
+  },
+  {
+    "id": "rev-1-17-18",
+    "reference": "Revelation 1:17-18",
+    "order": 18,
+    "text": "And when I saw him, I fell at his feet as dead. And he laid his right hand upon me, saying unto me, Fear not; I am the first and the last: I am he that liveth, and was dead; and, behold, I am alive for evermore, Amen; and have the keys of hell and of death.",
+    "decoys": [
+      "knelt",
+      "ground",
+      "dread",
+      "arm",
+      "beginning",
+      "end",
+      "eternal",
+      "always",
+      "gates",
+      "grave"
+    ]
+  },
+  {
+    "id": "rev-20-11-15",
+    "reference": "Revelation 20:11-15",
+    "order": 90,
+    "text": "And I saw a great white throne, and him that sat on it, from whose face the earth and the heaven fled away; and there was found no place for them. And I saw the dead, small and great, stand before God; and the books were opened: and another book was opened, which is the book of life: and the dead were judged out of those things which were written in the books, according to their works. And the sea gave up the dead which were in it; and death and hell delivered up the dead which were in them: and they were judged every man according to their works. And death and hell were cast into the lake of fire. This is the second death. And whosoever was not found written in the book of life was cast into the lake of fire.",
+    "decoys": [
+      "seat",
+      "ground",
+      "firmament",
+      "living",
+      "scrolls",
+      "scroll",
+      "existence",
+      "tried",
+      "deeds",
+      "ocean"
+    ]
+  },
+  {
+    "id": "rev-21-3-4",
+    "reference": "Revelation 21:3-4",
+    "order": 93,
+    "text": "And I heard a great voice out of heaven saying, Behold, the tabernacle of God is with men, and he will dwell with them, and they shall be his people, and God himself shall be with them, and be their God. And God shall wipe away all tears from their eyes; and there shall be no more death, neither sorrow, nor crying, neither shall there be any more pain: for the former things are passed away.",
+    "decoys": [
+      "sound",
+      "firmament",
+      "dwelling",
+      "nations",
+      "LORD",
+      "remove",
+      "drop",
+      "countenance",
+      "grave",
+      "mourning"
+    ]
+  },
+  {
+    "id": "rev-22-20",
+    "reference": "Revelation 22:20",
+    "order": 88,
+    "text": "He which testifieth these things saith, Surely I come quickly. Amen. Even so, come, Lord Jesus.",
+    "decoys": [
+      "witnesseth",
+      "soon",
+      "truly",
+      "go",
+      "Master",
+      "Christ",
+      "verily",
+      "swiftly"
+    ]
+  }
+]
