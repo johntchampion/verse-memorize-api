@@ -18,16 +18,18 @@ import { MAX_SLOTS } from '../services/slotRefill'
 
 export const meRouter = Router()
 
+/** Local dates (YYYY-MM-DD) on which a session was completed. */
+function sessionDates(rows: SessionLogRow[], timezone: string): Set<string> {
+  return new Set(
+    rows.map((r) => todayInTimezone(timezone, new Date(r.completed_at))),
+  )
+}
+
 /**
  * Consecutive days ending today (or yesterday, if today's session isn't done
  * yet) that have a session_log row, counted in the user's local dates.
  */
-function currentStreak(rows: SessionLogRow[], timezone: string): number {
-  const days = new Set(
-    rows.map((r) => todayInTimezone(timezone, new Date(r.completed_at))),
-  )
-  const today = todayInTimezone(timezone)
-
+function currentStreak(days: Set<string>, today: string): number {
   // An unfinished today shouldn't zero out a streak that's still alive.
   let cursor = days.has(today) ? today : addDays(today, -1)
 
@@ -64,6 +66,7 @@ function profileFor(id: string) {
 
   const today = todayInTimezone(user.timezone)
   const translation = resolveTranslation(user.translation)
+  const sessionDays = sessionDates(sessions, user.timezone)
 
   return {
     user: {
@@ -73,7 +76,8 @@ function profileFor(id: string) {
       translation,
       createdAt: user.created_at,
     },
-    streak: currentStreak(sessions, user.timezone),
+    streak: currentStreak(sessionDays, today),
+    completedToday: sessionDays.has(today),
     sessionsCompleted: sessions.length,
     versesStarted: total,
     slots: {
