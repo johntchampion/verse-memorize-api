@@ -114,7 +114,7 @@ There is no admin UI; **adding a verse or a translation is a code deploy.** The
 database holds only per-user state, and `user_verse.verse_id` stores the slug
 verbatim as a soft reference.
 
-The bank holds 99 verses in two translations, WEB and KJV.
+The bank holds 100 verses in multiple translations.
 
 ### Translations
 

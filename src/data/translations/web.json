@@ -35,7 +35,7 @@
   {
     "id": "gen-3-6-7",
     "reference": "Genesis 3:6-7",
-    "order": 32,
+    "order": 33,
     "text": "When the woman saw that the tree was good for food, and that it was a delight to the eyes, and that the tree was to be desired to make one wise, she took some of its fruit, and ate; and she gave some to her husband with her, and he ate it, too. Their eyes were opened, and they both knew that they were naked. They sewed fig leaves together, and made coverings for themselves.",
     "decoys": [
       "serpent",
@@ -100,7 +100,7 @@
   {
     "id": "ps-119-105",
     "reference": "Psalm 119:105",
-    "order": 26,
+    "order": 27,
     "text": "Your word is a lamp to my feet, and a light for my path.",
     "decoys": [
       "law",
@@ -167,7 +167,7 @@
   {
     "id": "isa-53-5-6",
     "reference": "Isaiah 53:5-6",
-    "order": 45,
+    "order": 46,
     "text": "But he was pierced for our transgressions. He was crushed for our iniquities. The punishment that brought our peace was on him; and by his wounds we are healed. All we like sheep have gone astray. Everyone has turned to his own way; and Yahweh has laid on him the iniquity of us all.",
     "decoys": [
       "wounded",
@@ -185,7 +185,7 @@
   {
     "id": "isa-64-6",
     "reference": "Isaiah 64:6",
-    "order": 30,
+    "order": 31,
     "text": "For we have all become like one who is unclean, and all our righteousness is like a polluted garment. We all fade like a leaf; and our iniquities, like the wind, take us away.",
     "decoys": [
       "sinful",
@@ -201,7 +201,7 @@
   {
     "id": "jer-17-9",
     "reference": "Jeremiah 17:9",
-    "order": 31,
+    "order": 32,
     "text": "The heart is deceitful above all things and it is exceedingly corrupt. Who can know it?",
     "decoys": [
       "mind",
@@ -215,7 +215,7 @@
   {
     "id": "ezek-36-26-27",
     "reference": "Ezekiel 36:26-27",
-    "order": 62,
+    "order": 63,
     "text": "I will also give you a new heart, and I will put a new spirit within you. I will take away the stony heart out of your flesh, and I will give you a heart of flesh. I will put my Spirit within you, and cause you to walk in my statutes. You will keep my ordinances and do them.",
     "decoys": [
       "mind",
@@ -230,7 +230,7 @@
   {
     "id": "mic-6-8",
     "reference": "Micah 6:8",
-    "order": 99,
+    "order": 100,
     "text": "He has shown you, O man, what is good. What does Yahweh require of you, but to act justly, to love mercy, and to walk humbly with your God?",
     "decoys": [
       "told",
@@ -262,7 +262,7 @@
   {
     "id": "matt-6-9-13",
     "reference": "Matthew 6:9-13",
-    "order": 83,
+    "order": 84,
     "text": "Pray like this: ‘Our Father in heaven, may your name be kept holy. Let your Kingdom come. Let your will be done, as in heaven, so on earth. Give us today our daily bread. Forgive us our debts, as we also forgive our debtors. Bring us not into temptation, but deliver us from the evil one. For yours is the Kingdom, the power, and the glory forever. Amen.’",
     "decoys": [
       "LORD",
@@ -280,7 +280,7 @@
   {
     "id": "matt-16-18",
     "reference": "Matthew 16:18",
-    "order": 75,
+    "order": 76,
     "text": "I also tell you that you are Peter, and on this rock I will build my assembly, and the gates of Hades will not prevail against it.",
     "decoys": [
       "Simon",
@@ -295,7 +295,7 @@
   {
     "id": "matt-22-37-39",
     "reference": "Matthew 22:37-39",
-    "order": 96,
+    "order": 97,
     "text": "Jesus said to him, “‘You shall love the Lord your God with all your heart, with all your soul, and with all your mind.’ This is the first and great commandment. A second likewise is this, ‘You shall love your neighbor as yourself.’",
     "decoys": [
       "cherish",
@@ -309,7 +309,7 @@
   {
     "id": "matt-25-46",
     "reference": "Matthew 25:46",
-    "order": 91,
+    "order": 92,
     "text": "These will go away into eternal punishment, but the righteous into eternal life.”",
     "decoys": [
       "everlasting",
@@ -337,7 +337,7 @@
   {
     "id": "matt-28-19-20",
     "reference": "Matthew 28:19-20",
-    "order": 79,
+    "order": 80,
     "text": "Go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, teaching them to observe all things that I commanded you. Behold, I am with you always, even to the end of the age.” Amen.",
     "decoys": [
       "followers",
@@ -355,7 +355,7 @@
   {
     "id": "mark-1-15",
     "reference": "Mark 1:15",
-    "order": 56,
+    "order": 57,
     "text": "And saying, “The time is fulfilled, and God’s Kingdom is at hand! Repent, and believe in the Good News.”",
     "decoys": [
       "hour",
@@ -369,7 +369,7 @@
   {
     "id": "luke-13-3",
     "reference": "Luke 13:3",
-    "order": 59,
+    "order": 60,
     "text": "I tell you, no, but unless you repent, you will all perish in the same way.",
     "decoys": [
       "believe",
@@ -414,7 +414,7 @@
   {
     "id": "john-3-3",
     "reference": "John 3:3",
-    "order": 60,
+    "order": 61,
     "text": "Jesus answered him, “Most certainly, I tell you, unless one is born anew, he can’t see God’s Kingdom.”",
     "decoys": [
       "truly",
@@ -428,7 +428,7 @@
   {
     "id": "john-3-16",
     "reference": "John 3:16",
-    "order": 36,
+    "order": 37,
     "text": "For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.",
     "decoys": [
       "cherished",
@@ -457,7 +457,7 @@
   {
     "id": "john-10-27-29",
     "reference": "John 10:27-29",
-    "order": 71,
+    "order": 72,
     "text": "My sheep hear my voice, and I know them, and they follow me. I give eternal life to them. They will never perish, and no one will snatch them out of my hand. My Father, who has given them to me, is greater than all. No one is able to snatch them out of my Father’s hand.",
     "decoys": [
       "flock",
@@ -475,7 +475,7 @@
   {
     "id": "john-14-3",
     "reference": "John 14:3",
-    "order": 85,
+    "order": 86,
     "text": "If I go and prepare a place for you, I will come again, and will receive you to myself; that where I am, you may be there also.",
     "decoys": [
       "build",
@@ -489,7 +489,7 @@
   {
     "id": "john-14-6",
     "reference": "John 14:6",
-    "order": 53,
+    "order": 54,
     "text": "Jesus said to him, “I am the way, the truth, and the life. No one comes to the Father, except through me.",
     "decoys": [
       "door",
@@ -520,7 +520,7 @@
   {
     "id": "john-16-13",
     "reference": "John 16:13",
-    "order": 63,
+    "order": 64,
     "text": "However when he, the Spirit of truth, has come, he will guide you into all truth, for he will not speak from himself; but whatever he hears, he will speak. He will declare to you things that are coming.",
     "decoys": [
       "wisdom",
@@ -535,7 +535,7 @@
   {
     "id": "john-17-3",
     "reference": "John 17:3",
-    "order": 94,
+    "order": 95,
     "text": "This is eternal life, that they should know you, the only true God, and him whom you sent, Jesus Christ.",
     "decoys": [
       "everlasting",
@@ -550,7 +550,7 @@
   {
     "id": "john-17-17",
     "reference": "John 17:17",
-    "order": 70,
+    "order": 71,
     "text": "Sanctify them in your truth. Your word is truth.",
     "decoys": [
       "Purify",
@@ -578,7 +578,7 @@
   {
     "id": "acts-1-11",
     "reference": "Acts 1:11",
-    "order": 86,
+    "order": 87,
     "text": "Who also said, “You men of Galilee, why do you stand looking into the sky? This Jesus, who was received up from you into the sky, will come back in the same way as you saw him going into the sky.”",
     "decoys": [
       "Judea",
@@ -593,7 +593,7 @@
   {
     "id": "acts-2-38",
     "reference": "Acts 2:38",
-    "order": 57,
+    "order": 58,
     "text": "Peter said to them, “Repent, and be baptized, every one of you, in the name of Jesus Christ for the forgiveness of sins, and you will receive the gift of the Holy Spirit.",
     "decoys": [
       "Believe",
@@ -611,7 +611,7 @@
   {
     "id": "acts-2-42",
     "reference": "Acts 2:42",
-    "order": 77,
+    "order": 78,
     "text": "They continued steadfastly in the apostles’ teaching and fellowship, in the breaking of bread, and prayer.",
     "decoys": [
       "faithfully",
@@ -626,7 +626,7 @@
   {
     "id": "acts-4-12",
     "reference": "Acts 4:12",
-    "order": 54,
+    "order": 55,
     "text": "There is salvation in none other, for neither is there any other name under heaven, that is given among men, by which we must be saved!”",
     "decoys": [
       "redemption",
@@ -640,7 +640,7 @@
   {
     "id": "acts-16-31",
     "reference": "Acts 16:31",
-    "order": 38,
+    "order": 39,
     "text": "They said, “Believe in the Lord Jesus Christ, and you will be saved, you and your household.”",
     "decoys": [
       "Trust",
@@ -654,7 +654,7 @@
   {
     "id": "acts-17-30",
     "reference": "Acts 17:30",
-    "order": 58,
+    "order": 59,
     "text": "The times of ignorance therefore God overlooked. But now he commands that all people everywhere should repent,",
     "decoys": [
       "unbelief",
@@ -668,7 +668,7 @@
   {
     "id": "rom-1-4",
     "reference": "Romans 1:4",
-    "order": 52,
+    "order": 53,
     "text": "Who was declared to be the Son of God with power, according to the Spirit of holiness, by the resurrection from the dead, Jesus Christ our Lord,",
     "decoys": [
       "proven",
@@ -684,7 +684,7 @@
   {
     "id": "rom-3-10-12",
     "reference": "Romans 3:10-12",
-    "order": 29,
+    "order": 30,
     "text": "As it is written, “There is no one righteous; no, not one. There is no one who understands. There is no one who seeks after God. They have all turned away. They have together become unprofitable. There is no one who does good, no, not so much as one.”",
     "decoys": [
       "holy",
@@ -698,7 +698,7 @@
   {
     "id": "rom-3-23",
     "reference": "Romans 3:23",
-    "order": 28,
+    "order": 29,
     "text": "For all have sinned, and fall short of the glory of God;",
     "decoys": [
       "transgressed",
@@ -712,7 +712,7 @@
   {
     "id": "rom-4-4-5",
     "reference": "Romans 4:4-5",
-    "order": 41,
+    "order": 42,
     "text": "Now to him who works, the reward is not counted as grace, but as something owed. But to him who doesn’t work, but believes in him who justifies the ungodly, his faith is accounted for righteousness.",
     "decoys": [
       "labors",
@@ -728,7 +728,7 @@
   {
     "id": "rom-4-25",
     "reference": "Romans 4:25",
-    "order": 51,
+    "order": 52,
     "text": "Who was delivered up for our trespasses, and was raised for our justification.",
     "decoys": [
       "handed",
@@ -742,7 +742,7 @@
   {
     "id": "rom-5-1",
     "reference": "Romans 5:1",
-    "order": 40,
+    "order": 41,
     "text": "Being therefore justified by faith, we have peace with God through our Lord Jesus Christ;",
     "decoys": [
       "sanctified",
@@ -756,7 +756,7 @@
   {
     "id": "rom-5-8",
     "reference": "Romans 5:8",
-    "order": 46,
+    "order": 47,
     "text": "But God commends his own love toward us, in that while we were yet sinners, Christ died for us.",
     "decoys": [
       "proves",
@@ -770,7 +770,7 @@
   {
     "id": "rom-5-12",
     "reference": "Romans 5:12",
-    "order": 33,
+    "order": 34,
     "text": "Therefore as sin entered into the world through one man, and death through sin; and so death passed to all men, because all sinned.",
     "decoys": [
       "evil",
@@ -784,7 +784,7 @@
   {
     "id": "rom-6-3-4",
     "reference": "Romans 6:3-4",
-    "order": 81,
+    "order": 82,
     "text": "Or don’t you know that all we who were baptized into Christ Jesus were baptized into his death? We were buried therefore with him through baptism into death, that just as Christ was raised from the dead through the glory of the Father, so we also might walk in newness of life.",
     "decoys": [
       "washed",
@@ -800,7 +800,7 @@
   {
     "id": "rom-6-23",
     "reference": "Romans 6:23",
-    "order": 35,
+    "order": 36,
     "text": "For the wages of sin is death, but the free gift of God is eternal life in Christ Jesus our Lord.",
     "decoys": [
       "penalty",
@@ -816,7 +816,7 @@
   {
     "id": "rom-8-9",
     "reference": "Romans 8:9",
-    "order": 64,
+    "order": 65,
     "text": "But you are not in the flesh but in the Spirit, if it is so that the Spirit of God dwells in you. But if any man doesn’t have the Spirit of Christ, he is not his.",
     "decoys": [
       "body",
@@ -830,7 +830,7 @@
   {
     "id": "rom-8-29",
     "reference": "Romans 8:29",
-    "order": 69,
+    "order": 70,
     "text": "For whom he foreknew, he also predestined to be conformed to the image of his Son, that he might be the firstborn among many brothers.",
     "decoys": [
       "chose",
@@ -845,7 +845,7 @@
   {
     "id": "rom-8-38-39",
     "reference": "Romans 8:38-39",
-    "order": 72,
+    "order": 73,
     "text": "For I am persuaded that neither death, nor life, nor angels, nor principalities, nor things present, nor things to come, nor powers, nor height, nor depth, nor any other created thing, will be able to separate us from God’s love, which is in Christ Jesus our Lord.",
     "decoys": [
       "dying",
@@ -863,7 +863,7 @@
   {
     "id": "rom-10-9-10",
     "reference": "Romans 10:9-10",
-    "order": 39,
+    "order": 40,
     "text": "That if you will confess with your mouth that Jesus is Lord, and believe in your heart that God raised him from the dead, you will be saved. For with the heart, one believes unto righteousness; and with the mouth confession is made unto salvation.",
     "decoys": [
       "proclaim",
@@ -881,7 +881,7 @@
   {
     "id": "rom-12-1-2",
     "reference": "Romans 12:1-2",
-    "order": 97,
+    "order": 98,
     "text": "Therefore I urge you, brothers, by the mercies of God, to present your bodies a living sacrifice, holy, acceptable to God, which is your spiritual service. Don’t be conformed to this world, but be transformed by the renewing of your mind, so that you may prove what is the good, well-pleasing, and perfect will of God.",
     "decoys": [
       "beg",
@@ -899,7 +899,7 @@
   {
     "id": "1cor-2-9",
     "reference": "1 Corinthians 2:9",
-    "order": 95,
+    "order": 96,
     "text": "But as it is written, “Things which an eye didn’t see, and an ear didn’t hear, which didn’t enter into the heart of man, these God has prepared for those who love him.”",
     "decoys": [
       "sight",
@@ -913,7 +913,7 @@
   {
     "id": "1cor-3-16",
     "reference": "1 Corinthians 3:16",
-    "order": 65,
+    "order": 66,
     "text": "Don’t you know that you are a temple of God, and that God’s Spirit lives in you?",
     "decoys": [
       "dwelling",
@@ -927,7 +927,7 @@
   {
     "id": "1cor-11-23-26",
     "reference": "1 Corinthians 11:23-26",
-    "order": 80,
+    "order": 81,
     "text": "For I received from the Lord that which also I delivered to you, that the Lord Jesus on the night in which he was betrayed took bread. When he had given thanks, he broke it, and said, “Take, eat. This is my body, which is broken for you. Do this in memory of me.” In the same way he also took the cup, after supper, saying, “This cup is the new covenant in my blood. Do this, as often as you drink, in memory of me.” For as often as you eat this bread and drink this cup, you proclaim the Lord’s death until he comes.",
     "decoys": [
       "Master",
@@ -945,7 +945,7 @@
   {
     "id": "1cor-15-3-4",
     "reference": "1 Corinthians 15:3-4",
-    "order": 49,
+    "order": 50,
     "text": "For I delivered to you first of all that which I also received: that Christ died for our sins according to the Scriptures, that he was buried, that he was raised on the third day according to the Scriptures,",
     "decoys": [
       "taught",
@@ -961,7 +961,7 @@
   {
     "id": "1cor-15-17",
     "reference": "1 Corinthians 15:17",
-    "order": 50,
+    "order": 51,
     "text": "If Christ has not been raised, your faith is vain; you are still in your sins.",
     "decoys": [
       "Jesus",
@@ -975,7 +975,7 @@
   {
     "id": "2cor-5-17",
     "reference": "2 Corinthians 5:17",
-    "order": 61,
+    "order": 62,
     "text": "Therefore if anyone is in Christ, he is a new creation. The old things have passed away. Behold, all things have become new.",
     "decoys": [
       "Jesus",
@@ -989,7 +989,7 @@
   {
     "id": "2cor-5-21",
     "reference": "2 Corinthians 5:21",
-    "order": 42,
+    "order": 43,
     "text": "For him who knew no sin he made to be sin on our behalf; so that in him we might become the righteousness of God.",
     "decoys": [
       "transgression",
@@ -1017,7 +1017,7 @@
   {
     "id": "gal-2-16",
     "reference": "Galatians 2:16",
-    "order": 43,
+    "order": 44,
     "text": "Yet knowing that a man is not justified by the works of the law but through faith in Jesus Christ, even we believed in Christ Jesus, that we might be justified by faith in Christ, and not by the works of the law, because no flesh will be justified by the works of the law.",
     "decoys": [
       "saved",
@@ -1033,7 +1033,7 @@
   {
     "id": "gal-2-20",
     "reference": "Galatians 2:20",
-    "order": 98,
+    "order": 99,
     "text": "I have been crucified with Christ, and it is no longer I that live, but Christ lives in me. That life which I now live in the flesh, I live by faith in the Son of God, who loved me, and gave himself up for me.",
     "decoys": [
       "killed",
@@ -1050,7 +1050,7 @@
   {
     "id": "gal-5-22-23",
     "reference": "Galatians 5:22-23",
-    "order": 66,
+    "order": 67,
     "text": "But the fruit of the Spirit is love, joy, peace, patience, kindness, goodness, faith, gentleness, and self-control. Against such things there is no law.",
     "decoys": [
       "harvest",
@@ -1068,7 +1068,7 @@
   {
     "id": "eph-1-22-23",
     "reference": "Ephesians 1:22-23",
-    "order": 76,
+    "order": 77,
     "text": "He put all things in subjection under his feet, and gave him to be head over all things for the assembly, which is his body, the fullness of him who fills all in all.",
     "decoys": [
       "submission",
@@ -1083,7 +1083,7 @@
   {
     "id": "eph-2-8-9",
     "reference": "Ephesians 2:8-9",
-    "order": 34,
+    "order": 35,
     "text": "For by grace you have been saved through faith, and that not of yourselves; it is the gift of God, not of works, that no one would boast.",
     "decoys": [
       "mercy",
@@ -1098,7 +1098,7 @@
   {
     "id": "phil-1-6",
     "reference": "Philippians 1:6",
-    "order": 74,
+    "order": 75,
     "text": "Being confident of this very thing, that he who began a good work in you will complete it until the day of Jesus Christ.",
     "decoys": [
       "certain",
@@ -1127,7 +1127,7 @@
   {
     "id": "phil-2-12-13",
     "reference": "Philippians 2:12-13",
-    "order": 68,
+    "order": 69,
     "text": "So then, my beloved, even as you have always obeyed, not only in my presence, but now much more in my absence, work out your own salvation with fear and trembling. For it is God who works in you both to will and to work, for his good pleasure.",
     "decoys": [
       "brothers",
@@ -1144,7 +1144,7 @@
   {
     "id": "phil-4-6-7",
     "reference": "Philippians 4:6-7",
-    "order": 82,
+    "order": 83,
     "text": "In nothing be anxious, but in everything, by prayer and petition with thanksgiving, let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your thoughts in Christ Jesus.",
     "decoys": [
       "worried",
@@ -1176,7 +1176,7 @@
   {
     "id": "1thess-4-3",
     "reference": "1 Thessalonians 4:3",
-    "order": 67,
+    "order": 68,
     "text": "For this is the will of God: your sanctification, that you abstain from sexual immorality,",
     "decoys": [
       "purpose",
@@ -1190,7 +1190,7 @@
   {
     "id": "1thess-4-16-17",
     "reference": "1 Thessalonians 4:16-17",
-    "order": 87,
+    "order": 88,
     "text": "For the Lord himself will descend from heaven with a shout, with the voice of the archangel, and with God’s trumpet. The dead in Christ will rise first, then we who are alive, who are left, will be caught up together with them in the clouds, to meet the Lord in the air. So we will be with the Lord forever.",
     "decoys": [
       "Savior",
@@ -1208,7 +1208,7 @@
   {
     "id": "1thess-5-17",
     "reference": "1 Thessalonians 5:17",
-    "order": 84,
+    "order": 85,
     "text": "Pray without ceasing.",
     "decoys": [
       "Worship",
@@ -1222,7 +1222,7 @@
   {
     "id": "2thess-1-8-9",
     "reference": "2 Thessalonians 1:8-9",
-    "order": 92,
+    "order": 93,
     "text": "Punishing those who don’t know God, and to those who don’t obey the Good News of our Lord Jesus, who will pay the penalty: eternal destruction from the face of the Lord and from the glory of his might,",
     "decoys": [
       "judging",
@@ -1238,7 +1238,7 @@
   {
     "id": "1tim-2-5",
     "reference": "1 Timothy 2:5",
-    "order": 23,
+    "order": 24,
     "text": "For there is one God, and one mediator between God and men, the man Christ Jesus,",
     "decoys": [
       "LORD",
@@ -1252,7 +1252,7 @@
   {
     "id": "1tim-2-5-6",
     "reference": "1 Timothy 2:5-6",
-    "order": 55,
+    "order": 56,
     "text": "For there is one God, and one mediator between God and men, the man Christ Jesus, who gave himself as a ransom for all; the testimony in its own times;",
     "decoys": [
       "LORD",
@@ -1267,7 +1267,7 @@
   {
     "id": "2tim-3-16-17",
     "reference": "2 Timothy 3:16-17",
-    "order": 24,
+    "order": 25,
     "text": "Every Scripture is God-breathed and profitable for teaching, for reproof, for correction, and for instruction in righteousness, that the man of God may be complete, thoroughly equipped for every good work.",
     "decoys": [
       "doctrine",
@@ -1284,7 +1284,7 @@
   {
     "id": "titus-3-5",
     "reference": "Titus 3:5",
-    "order": 37,
+    "order": 38,
     "text": "Not by works of righteousness which we did ourselves, but according to his mercy, he saved us through the washing of regeneration and renewing by the Holy Spirit,",
     "decoys": [
       "deeds",
@@ -1316,9 +1316,25 @@
     ]
   },
   {
+    "id": "heb-2-17",
+    "reference": "Hebrews 2:17",
+    "order": 22,
+    "text": "Therefore he was obligated in all things to be made like his brothers, that he might become a merciful and faithful high priest in things pertaining to God, to make atonement for the sins of the people.",
+    "decoys": [
+      "required",
+      "brethren",
+      "compassionate",
+      "trustworthy",
+      "reconciliation",
+      "transgressions",
+      "mankind",
+      "service"
+    ]
+  },
+  {
     "id": "heb-4-12",
     "reference": "Hebrews 4:12",
-    "order": 27,
+    "order": 28,
     "text": "For the word of God is living and active, and sharper than any two-edged sword, piercing even to the dividing of soul and spirit, of both joints and marrow, and is able to discern the thoughts and intentions of the heart.",
     "decoys": [
       "powerful",
@@ -1335,7 +1351,7 @@
   {
     "id": "heb-4-15",
     "reference": "Hebrews 4:15",
-    "order": 22,
+    "order": 23,
     "text": "For we don’t have a high priest who can’t be touched with the feeling of our infirmities, but one who has been in all points tempted like we are, yet without sin.",
     "decoys": [
       "mediator",
@@ -1349,7 +1365,7 @@
   {
     "id": "heb-9-22",
     "reference": "Hebrews 9:22",
-    "order": 47,
+    "order": 48,
     "text": "According to the law, nearly everything is cleansed with blood, and apart from shedding of blood there is no remission.",
     "decoys": [
       "commandment",
@@ -1363,7 +1379,7 @@
   {
     "id": "heb-9-27",
     "reference": "Hebrews 9:27",
-    "order": 89,
+    "order": 90,
     "text": "Inasmuch as it is appointed for men to die once, and after this, judgment,",
     "decoys": [
       "destined",
@@ -1377,7 +1393,7 @@
   {
     "id": "heb-10-24-25",
     "reference": "Hebrews 10:24-25",
-    "order": 78,
+    "order": 79,
     "text": "Let us consider how to provoke one another to love and good works, not forsaking our own assembling together, as the custom of some is, but exhorting one another; and so much the more, as you see the Day approaching.",
     "decoys": [
       "stir",
@@ -1394,7 +1410,7 @@
   {
     "id": "1pet-2-24",
     "reference": "1 Peter 2:24",
-    "order": 44,
+    "order": 45,
     "text": "He himself bore our sins in his body on the tree, that we, having died to sins, might live to righteousness; by whose stripes you were healed.",
     "decoys": [
       "carried",
@@ -1409,7 +1425,7 @@
   {
     "id": "2pet-1-20-21",
     "reference": "2 Peter 1:20-21",
-    "order": 25,
+    "order": 26,
     "text": "Knowing this first, that no prophecy of Scripture is of private interpretation. For no prophecy ever came by the will of man: but holy men of God spoke, being moved by the Holy Spirit.",
     "decoys": [
       "revelation",
@@ -1426,7 +1442,7 @@
   {
     "id": "1john-2-2",
     "reference": "1 John 2:2",
-    "order": 48,
+    "order": 49,
     "text": "And he is the atoning sacrifice for our sins, and not for ours only, but also for the whole world.",
     "decoys": [
       "propitiation",
@@ -1456,7 +1472,7 @@
   {
     "id": "1john-5-13",
     "reference": "1 John 5:13",
-    "order": 73,
+    "order": 74,
     "text": "These things I have written to you who believe in the name of the Son of God, that you may know that you have eternal life, and that you may continue to believe in the name of the Son of God.",
     "decoys": [
       "spoken",
@@ -1490,7 +1506,7 @@
   {
     "id": "rev-20-11-15",
     "reference": "Revelation 20:11-15",
-    "order": 90,
+    "order": 91,
     "text": "I saw a great white throne, and him who sat on it, from whose face the earth and the heaven fled away. There was found no place for them. I saw the dead, the great and the small, standing before the throne, and they opened books. Another book was opened, which is the book of life. The dead were judged out of the things which were written in the books, according to their works. The sea gave up the dead who were in it. Death and Hades gave up the dead who were in them. They were judged, each one according to his works. Death and Hades were thrown into the lake of fire. This is the second death, the lake of fire. If anyone was not found written in the book of life, he was cast into the lake of fire.",
     "decoys": [
       "seat",
@@ -1508,7 +1524,7 @@
   {
     "id": "rev-21-3-4",
     "reference": "Revelation 21:3-4",
-    "order": 93,
+    "order": 94,
     "text": "I heard a loud voice out of heaven saying, “Behold, God’s dwelling is with people, and he will dwell with them, and they will be his people, and God himself will be with them as their God. He will wipe away every tear from their eyes. Death will be no more; neither will there be mourning, nor crying, nor pain, any more. The first things have passed away.”",
     "decoys": [
       "sound",
@@ -1526,7 +1542,7 @@
   {
     "id": "rev-22-20",
     "reference": "Revelation 22:20",
-    "order": 88,
+    "order": 89,
     "text": "He who testifies these things says, “Yes, I come quickly.” Amen! Yes, come, Lord Jesus.",
     "decoys": [
       "witnesses",
