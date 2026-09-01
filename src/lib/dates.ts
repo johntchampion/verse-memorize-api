@@ -13,16 +13,16 @@ export function todayInTimezone(timezone: string, now = new Date()): string {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(now);
+    }).format(now)
   } catch {
     // Unknown timezone on the user row — fall back to UTC rather than 500.
-    return now.toISOString().slice(0, 10);
+    return now.toISOString().slice(0, 10)
   }
 }
 
 /** Adds `days` to a `YYYY-MM-DD` string, returning the same format. */
 export function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(`${date}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
 }

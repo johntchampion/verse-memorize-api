@@ -110,7 +110,9 @@ describe('PATCH /api/me', () => {
     const { token } = await signup()
     const before = await authed(token).get('/api/me')
 
-    const res = await authed(token).patch('/api/me').send({ translation: 'kjv' })
+    const res = await authed(token)
+      .patch('/api/me')
+      .send({ translation: 'kjv' })
     expect(res.status).toBe(200)
     expect(res.body.user.translation).toBe('KJV')
     expect(res.body.versesStarted).toBe(before.body.versesStarted)
@@ -145,7 +147,9 @@ describe('PATCH /api/me', () => {
 
   it('rejects an unrecognised translation', async () => {
     const { token } = await signup()
-    const res = await authed(token).patch('/api/me').send({ translation: 'XXX' })
+    const res = await authed(token)
+      .patch('/api/me')
+      .send({ translation: 'XXX' })
     expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: 'unknown translation' })
   })

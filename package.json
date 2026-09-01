@@ -11,6 +11,8 @@
     "build": "tsc && cp src/db/schema.sql dist/db/schema.sql && mkdir -p dist/data/translations && cp src/data/translations/*.json dist/data/translations/",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -29,6 +31,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.3.0",
     "@types/supertest": "^7.2.1",
+    "prettier": "^3.9.6",
     "supertest": "^7.2.2",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",

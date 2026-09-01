@@ -73,13 +73,11 @@ describe('POST /auth/signup', () => {
   })
 
   it('rejects an unknown translation code', async () => {
-    const res = await request(app)
-      .post('/auth/signup')
-      .send({
-        email: uniqueEmail(),
-        password: 'password123',
-        translation: 'XXX',
-      })
+    const res = await request(app).post('/auth/signup').send({
+      email: uniqueEmail(),
+      password: 'password123',
+      translation: 'XXX',
+    })
     expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: 'unknown translation' })
   })

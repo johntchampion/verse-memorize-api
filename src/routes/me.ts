@@ -44,8 +44,7 @@ function currentStreak(days: Set<string>, today: string): number {
 /** The GET /api/me response body, shared with PATCH so both return one shape. */
 function profileFor(id: string) {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
-    | UserRow
-    | undefined
+    UserRow | undefined
   if (!user) return null
 
   const sessions = db

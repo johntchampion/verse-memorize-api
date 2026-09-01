@@ -47,7 +47,9 @@ describe('PUT /api/queue', () => {
     )
     const reordered = [...current].reverse()
 
-    const put = await authed(token).put('/api/queue').send({ verseIds: reordered })
+    const put = await authed(token)
+      .put('/api/queue')
+      .send({ verseIds: reordered })
     expect(put.status).toBe(200)
     expect(put.body.customized).toBe(true)
     expect(put.body.queue.map((v: { id: string }) => v.id)).toEqual(reordered)
@@ -98,7 +100,9 @@ describe('DELETE /api/queue', () => {
     const del = await authed(token).delete('/api/queue')
     expect(del.status).toBe(200)
     expect(del.body.customized).toBe(false)
-    expect(del.body.queue.map((v: { id: string }) => v.id)).toEqual(defaultOrder)
+    expect(del.body.queue.map((v: { id: string }) => v.id)).toEqual(
+      defaultOrder,
+    )
   })
 })
 
@@ -142,7 +146,9 @@ describe('POST /api/queue/next', () => {
     const queue = (await authed(token).get('/api/queue')).body.queue
     const target = queue[queue.length - 1].id
 
-    const res = await authed(token).post('/api/queue/next').send({ verseId: target })
+    const res = await authed(token)
+      .post('/api/queue/next')
+      .send({ verseId: target })
     expect(res.status).toBe(200)
     expect(res.body.queue[0].id).toBe(target)
   })
@@ -150,7 +156,9 @@ describe('POST /api/queue/next', () => {
   it('rejects a verse that is not in the queue', async () => {
     const { token } = await signup()
     const verses = (await authed(token).get('/api/verses')).body.verses
-    const slotted = verses.find((v: { status: string }) => v.status === 'active')
+    const slotted = verses.find(
+      (v: { status: string }) => v.status === 'active',
+    )
 
     const res = await authed(token)
       .post('/api/queue/next')
@@ -226,7 +234,9 @@ describe('relearning re-enters at the front of the queue', () => {
     const verseId = verses.find(
       (v: { status: string }) => v.status === 'active',
     ).id
-    const userVerseId = (await authed(token).get('/api/me')).body.slots.active.find(
+    const userVerseId = (
+      await authed(token).get('/api/me')
+    ).body.slots.active.find(
       (s: { verseId: string }) => s.verseId === verseId,
     ).userVerseId
 

@@ -48,7 +48,9 @@ describe('GET /api/verses', () => {
     const canon = await authed(token).get('/api/verses?orderBy=canon')
 
     expect(canon.status).toBe(200)
-    const curriculumIds = curriculum.body.verses.map((v: { id: string }) => v.id)
+    const curriculumIds = curriculum.body.verses.map(
+      (v: { id: string }) => v.id,
+    )
     const canonIds = canon.body.verses.map((v: { id: string }) => v.id)
     expect(new Set(canonIds)).toEqual(new Set(curriculumIds))
     expect(canonIds).not.toEqual(curriculumIds) // genuinely different orderings

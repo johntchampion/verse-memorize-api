@@ -6,19 +6,14 @@
  */
 
 /** The word inside a whitespace-delimited token — letters, digits, apostrophes, hyphens. */
-export const WORD_PATTERN = /[\p{L}\p{N}'’-]+/u;
+export const WORD_PATTERN = /[\p{L}\p{N}'’-]+/u
 
 /** The lowercased word inside a raw token, or '' if it holds none. */
 export function coreWord(raw: string): string {
-  return WORD_PATTERN.exec(raw)?.[0].toLowerCase() ?? '';
+  return WORD_PATTERN.exec(raw)?.[0].toLowerCase() ?? ''
 }
 
 /** Every distinct word in a passage, lowercased. */
 export function wordsIn(text: string): Set<string> {
-  return new Set(
-    text
-      .split(/\s+/)
-      .map(coreWord)
-      .filter(Boolean),
-  );
+  return new Set(text.split(/\s+/).map(coreWord).filter(Boolean))
 }

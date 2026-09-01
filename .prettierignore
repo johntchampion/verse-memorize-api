@@ -1,0 +1,12 @@
+dist/
+node_modules/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+package-lock.json
+
+# Prose, hand-formatted deliberately.
+README.md
+
+# Verse bank data — large generated files, reviewed as data not as source.
+src/data/translations/*.json

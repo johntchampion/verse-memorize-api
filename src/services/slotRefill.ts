@@ -135,9 +135,7 @@ export function replaceSlot(
   }
 
   const displaced = db
-    .prepare(
-      'SELECT * FROM user_verse WHERE user_id = ? AND slot = ?',
-    )
+    .prepare('SELECT * FROM user_verse WHERE user_id = ? AND slot = ?')
     .get(userId, slot) as UserVerseRow | undefined
 
   if (displaced) {
@@ -149,9 +147,7 @@ export function replaceSlot(
   const placed = activateIntoSlot(userId, verseId, slot, incoming)
   return {
     placed,
-    displaced: displaced
-      ? readById(displaced.id)
-      : null,
+    displaced: displaced ? readById(displaced.id) : null,
   }
 }
 

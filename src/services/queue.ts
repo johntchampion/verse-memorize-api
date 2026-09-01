@@ -56,7 +56,9 @@ function storedOrder(userId: string): string[] | null {
   if (!row) return null
   try {
     const parsed: unknown = JSON.parse(row.verse_order)
-    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : null
+    return Array.isArray(parsed)
+      ? parsed.filter((v) => typeof v === 'string')
+      : null
   } catch {
     return null
   }

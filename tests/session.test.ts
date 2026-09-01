@@ -95,26 +95,22 @@ describe('POST /api/attempt', () => {
     const other = await signup()
     const otherUserVerseId = await firstActiveUserVerseId(other.token)
 
-    const res = await authed(token)
-      .post('/api/attempt')
-      .send({
-        userVerseId: otherUserVerseId,
-        exerciseType: 'tile_fill_blank',
-        correct: true,
-      })
+    const res = await authed(token).post('/api/attempt').send({
+      userVerseId: otherUserVerseId,
+      exerciseType: 'tile_fill_blank',
+      correct: true,
+    })
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ error: 'user_verse not found' })
   })
 
   it('404s for a random uuid', async () => {
     const { token } = await signup()
-    const res = await authed(token)
-      .post('/api/attempt')
-      .send({
-        userVerseId: '00000000-0000-0000-0000-000000000000',
-        exerciseType: 'tile_fill_blank',
-        correct: true,
-      })
+    const res = await authed(token).post('/api/attempt').send({
+      userVerseId: '00000000-0000-0000-0000-000000000000',
+      exerciseType: 'tile_fill_blank',
+      correct: true,
+    })
     expect(res.status).toBe(404)
   })
 
@@ -134,7 +130,11 @@ describe('POST /api/attempt', () => {
 
     const badId = await authed(token)
       .post('/api/attempt')
-      .send({ userVerseId: 'not-a-uuid', exerciseType: 'tile_fill_blank', correct: true })
+      .send({
+        userVerseId: 'not-a-uuid',
+        exerciseType: 'tile_fill_blank',
+        correct: true,
+      })
     expect(badId.status).toBe(400)
   })
 

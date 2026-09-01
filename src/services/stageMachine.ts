@@ -1,52 +1,62 @@
-import { randomUUID } from 'node:crypto';
-import { db, type ExerciseType, type Stage, type UserVerseRow } from '../db/client';
-import { addDays, todayInTimezone } from '../lib/dates';
-import { refillSlots } from './slotRefill';
-import { bumpRelearningToFront } from './queue';
+import { randomUUID } from 'node:crypto'
+import {
+  db,
+  type ExerciseType,
+  type Stage,
+  type UserVerseRow,
+} from '../db/client'
+import { addDays, todayInTimezone } from '../lib/dates'
+import { refillSlots } from './slotRefill'
+import { bumpRelearningToFront } from './queue'
 
 // ---------------------------------------------------------------------------
 // Tuning constants. Change these here, not at the call sites.
 // ---------------------------------------------------------------------------
 
 /** Consecutive correct completions needed to advance a learning tier. */
-export const TIER_ADVANCE_THRESHOLD = 3;
+export const TIER_ADVANCE_THRESHOLD = 3
 
 /** Consecutive misses that drop a verse back a learning tier. */
-export const TIER_DOWNGRADE_THRESHOLD = 2;
+export const TIER_DOWNGRADE_THRESHOLD = 2
 
 /** Consecutive correct reviews needed to step the interval up a rung. */
-export const REVIEW_ADVANCE_THRESHOLD = 3;
+export const REVIEW_ADVANCE_THRESHOLD = 3
 
 /** Consecutive missed reviews that pull a verse back into a learning slot. */
-export const REVIEW_DEMOTION_THRESHOLD = 2;
+export const REVIEW_DEMOTION_THRESHOLD = 2
 
 /** Review interval ladder, in days. */
-export const INTERVAL_PROGRESSION = [1, 3, 7, 14, 30] as const;
-export const MAX_INTERVAL_DAYS = INTERVAL_PROGRESSION[INTERVAL_PROGRESSION.length - 1];
+export const INTERVAL_PROGRESSION = [1, 3, 7, 14, 30] as const
+export const MAX_INTERVAL_DAYS =
+  INTERVAL_PROGRESSION[INTERVAL_PROGRESSION.length - 1]
 
-const LEARNING_ORDER: Stage[] = ['learning_light', 'learning_medium', 'learning_heavy'];
+const LEARNING_ORDER: Stage[] = [
+  'learning_light',
+  'learning_medium',
+  'learning_heavy',
+]
 
 export function isLearningStage(stage: Stage): boolean {
-  return LEARNING_ORDER.includes(stage);
+  return LEARNING_ORDER.includes(stage)
 }
 
 /** Stages that surface in the review queue. */
 export function isReviewStage(stage: Stage): boolean {
-  return stage === 'review' || stage === 'mastered';
+  return stage === 'review' || stage === 'mastered'
 }
 
 /** The next rung up the interval ladder, capped at the top. */
 function nextInterval(current: number): number {
-  const next = INTERVAL_PROGRESSION.find((days) => days > current);
-  return next ?? MAX_INTERVAL_DAYS;
+  const next = INTERVAL_PROGRESSION.find((days) => days > current)
+  return next ?? MAX_INTERVAL_DAYS
 }
 
 export interface AttemptOutcome {
-  userVerse: UserVerseRow;
+  userVerse: UserVerseRow
   /** True when this attempt graduated the verse out of learning_heavy. */
-  graduated: boolean;
+  graduated: boolean
   /** Rows slotted by the refill this attempt triggered — new or relearning. */
-  slotsFilled: UserVerseRow[];
+  slotsFilled: UserVerseRow[]
 }
 
 /** The subset of a user_verse row this machine rewrites. */
@@ -64,7 +74,7 @@ type State = Pick<
   | 'relearning_queued_at'
   | 'slot'
   | 'graduated_at'
->;
+>
 
 /**
  * Records one exercise attempt and advances the verse.
@@ -82,13 +92,13 @@ export const recordAttempt = db.transaction(
     correct: boolean,
     timezone: string,
   ): AttemptOutcome => {
-    const now = new Date().toISOString();
-    const today = todayInTimezone(timezone);
+    const now = new Date().toISOString()
+    const today = todayInTimezone(timezone)
 
     db.prepare(
       `INSERT INTO attempt (id, user_verse_id, exercise_type, correct, created_at)
        VALUES (?, ?, ?, ?, ?)`,
-    ).run(randomUUID(), userVerse.id, exerciseType, correct ? 1 : 0, now);
+    ).run(randomUUID(), userVerse.id, exerciseType, correct ? 1 : 0, now)
 
     const s: State = {
       stage: userVerse.stage,
@@ -103,66 +113,66 @@ export const recordAttempt = db.transaction(
       relearning_queued_at: userVerse.relearning_queued_at,
       slot: userVerse.slot,
       graduated_at: userVerse.graduated_at,
-    };
+    }
 
-    let graduated = false;
-    let refill = false;
+    let graduated = false
+    let refill = false
 
     if (isLearningStage(s.stage)) {
       // One tier change per verse per day, and never one of each: an upgrade
       // today rules out a downgrade today, and vice versa.
       const tierChangedToday =
-        s.last_upgrade_date === today || s.last_downgrade_date === today;
+        s.last_upgrade_date === today || s.last_downgrade_date === today
 
       if (correct) {
         // The three-in-a-row has to land inside one calendar day, so a run
         // carried over from yesterday starts again at one.
-        const carried = s.streak_date === today ? s.consecutive_correct : 0;
-        s.consecutive_correct = carried + 1;
-        s.consecutive_incorrect = 0;
-        s.streak_date = today;
+        const carried = s.streak_date === today ? s.consecutive_correct : 0
+        s.consecutive_correct = carried + 1
+        s.consecutive_incorrect = 0
+        s.streak_date = today
 
         if (s.consecutive_correct >= TIER_ADVANCE_THRESHOLD) {
           // Whether or not the upgrade lands, the run is spent. A blocked
           // upgrade leaves the extra correct answers as plain practice.
-          s.consecutive_correct = 0;
-          s.streak_date = null;
+          s.consecutive_correct = 0
+          s.streak_date = null
 
           if (!tierChangedToday) {
-            const tierIndex = LEARNING_ORDER.indexOf(s.stage);
-            s.last_upgrade_date = today;
+            const tierIndex = LEARNING_ORDER.indexOf(s.stage)
+            s.last_upgrade_date = today
 
             if (tierIndex < LEARNING_ORDER.length - 1) {
-              s.stage = LEARNING_ORDER[tierIndex + 1];
+              s.stage = LEARNING_ORDER[tierIndex + 1]
             } else {
               // learning_heavy -> review: empty the slot, stamp the graduation
               // timestamp, and open at the bottom of the interval ladder.
-              s.stage = 'review';
-              s.slot = null;
-              s.graduated_at = now;
-              s.interval_days = 1;
-              s.due_at = addDays(today, 1);
-              graduated = true;
-              refill = true;
+              s.stage = 'review'
+              s.slot = null
+              s.graduated_at = now
+              s.interval_days = 1
+              s.due_at = addDays(today, 1)
+              graduated = true
+              refill = true
             }
           }
         }
       } else {
         // Unlike the correct-streak, this one is allowed to span days.
-        s.consecutive_incorrect += 1;
-        s.consecutive_correct = 0;
-        s.streak_date = null;
+        s.consecutive_incorrect += 1
+        s.consecutive_correct = 0
+        s.streak_date = null
 
         if (s.consecutive_incorrect >= TIER_DOWNGRADE_THRESHOLD) {
           // Spent either way: after a blocked downgrade a fresh pair of misses
           // is needed to trigger one again.
-          s.consecutive_incorrect = 0;
+          s.consecutive_incorrect = 0
 
-          const tierIndex = LEARNING_ORDER.indexOf(s.stage);
+          const tierIndex = LEARNING_ORDER.indexOf(s.stage)
           // learning_light is the floor — two misses there change nothing.
           if (tierIndex > 0 && !tierChangedToday) {
-            s.stage = LEARNING_ORDER[tierIndex - 1];
-            s.last_downgrade_date = today;
+            s.stage = LEARNING_ORDER[tierIndex - 1]
+            s.last_downgrade_date = today
           }
         }
       }
@@ -170,59 +180,59 @@ export const recordAttempt = db.transaction(
       if (correct) {
         // Mastered is the ceiling; it just keeps coming back on the long
         // interval so it doesn't go stale.
-        s.consecutive_correct = 0;
-        s.consecutive_incorrect = 0;
-        s.interval_days = MAX_INTERVAL_DAYS;
-        s.due_at = addDays(today, MAX_INTERVAL_DAYS);
+        s.consecutive_correct = 0
+        s.consecutive_incorrect = 0
+        s.interval_days = MAX_INTERVAL_DAYS
+        s.due_at = addDays(today, MAX_INTERVAL_DAYS)
       } else {
-        s.stage = 'review';
-        s.interval_days = 1;
-        s.due_at = addDays(today, 1);
-        s.consecutive_correct = 0;
+        s.stage = 'review'
+        s.interval_days = 1
+        s.due_at = addDays(today, 1)
+        s.consecutive_correct = 0
         // The miss that cost mastery is also the first strike toward review's
         // two-miss demotion — one more now sends it back to a learning slot.
-        s.consecutive_incorrect = 1;
+        s.consecutive_incorrect = 1
       }
     } else {
-      const interval = s.interval_days ?? 1;
+      const interval = s.interval_days ?? 1
 
       if (correct) {
-        s.consecutive_incorrect = 0;
-        s.consecutive_correct += 1;
+        s.consecutive_incorrect = 0
+        s.consecutive_correct += 1
 
         if (s.consecutive_correct >= REVIEW_ADVANCE_THRESHOLD) {
-          s.consecutive_correct = 0;
+          s.consecutive_correct = 0
 
           if (interval >= MAX_INTERVAL_DAYS) {
             // Nowhere left to extend the interval to, so the bump becomes
             // mastery instead.
-            s.stage = 'mastered';
-            s.interval_days = MAX_INTERVAL_DAYS;
+            s.stage = 'mastered'
+            s.interval_days = MAX_INTERVAL_DAYS
           } else {
-            s.interval_days = nextInterval(interval);
+            s.interval_days = nextInterval(interval)
           }
         } else {
-          s.interval_days = interval;
+          s.interval_days = interval
         }
 
-        s.due_at = addDays(today, s.interval_days ?? 1);
+        s.due_at = addDays(today, s.interval_days ?? 1)
       } else {
-        s.consecutive_correct = 0;
-        s.consecutive_incorrect += 1;
+        s.consecutive_correct = 0
+        s.consecutive_incorrect += 1
 
         if (s.consecutive_incorrect >= REVIEW_DEMOTION_THRESHOLD) {
           // Out of review entirely: it waits here, unscheduled, until a
           // learning slot opens and slotRefill re-seats it at learning_heavy.
-          s.consecutive_incorrect = 0;
-          s.needs_relearning = 1;
-          s.relearning_queued_at = now;
-          s.interval_days = null;
-          s.due_at = null;
-          refill = true;
-          bumpRelearningToFront(userVerse.user_id, userVerse.verse_id);
+          s.consecutive_incorrect = 0
+          s.needs_relearning = 1
+          s.relearning_queued_at = now
+          s.interval_days = null
+          s.due_at = null
+          refill = true
+          bumpRelearningToFront(userVerse.user_id, userVerse.verse_id)
         } else {
-          s.interval_days = 1;
-          s.due_at = addDays(today, 1);
+          s.interval_days = 1
+          s.due_at = addDays(today, 1)
         }
       }
     }
@@ -256,16 +266,18 @@ export const recordAttempt = db.transaction(
       s.slot,
       s.graduated_at,
       userVerse.id,
-    );
+    )
 
     // A graduation empties a slot; a demotion adds a claimant for one. Either
     // way the queue may now be able to move.
-    const slotsFilled = refill ? refillSlots(userVerse.user_id) : [];
+    const slotsFilled = refill ? refillSlots(userVerse.user_id) : []
 
     return {
-      userVerse: db.prepare('SELECT * FROM user_verse WHERE id = ?').get(userVerse.id) as UserVerseRow,
+      userVerse: db
+        .prepare('SELECT * FROM user_verse WHERE id = ?')
+        .get(userVerse.id) as UserVerseRow,
       graduated,
       slotsFilled,
-    };
+    }
   },
-);
+)

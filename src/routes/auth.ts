@@ -73,8 +73,7 @@ authRouter.post('/login', async (req, res) => {
   const email = parsed.data.email.trim().toLowerCase()
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as
-    | UserRow
-    | undefined
+    UserRow | undefined
   // Compare against a dummy hash when the user is missing so that a bad email
   // and a bad password take the same amount of time.
   const hash =
