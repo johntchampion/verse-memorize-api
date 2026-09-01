@@ -2,55 +2,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 
-import type { Stage } from '../domain/stage'
-
-// Stage lives in domain/stage.ts, which owns the behavior that goes with it.
-// Re-exported here because the row types below are typed in terms of it.
-export type { Stage }
-
-export type ExerciseType = 'tile_fill_blank' | 'type_fill_blank'
-
-export interface UserRow {
-  id: string
-  email: string
-  password_hash: string
-  created_at: string
-  timezone: string
-  translation: string
-}
-
-export interface UserVerseRow {
-  id: string
-  user_id: string
-  verse_id: string
-  stage: Stage
-  consecutive_correct: number
-  consecutive_incorrect: number
-  streak_date: string | null
-  interval_days: number | null
-  due_at: string | null
-  last_upgrade_date: string | null
-  last_downgrade_date: string | null
-  needs_relearning: number
-  relearning_queued_at: string | null
-  slot: number | null
-  activated_at: string
-  graduated_at: string | null
-}
-
-export interface AttemptRow {
-  id: string
-  user_verse_id: string
-  exercise_type: ExerciseType
-  correct: number
-  created_at: string
-}
-
-export interface SessionLogRow {
-  id: string
-  user_id: string
-  completed_at: string
-}
+// Row shapes live in ./rows. Re-exported so the many existing importers of
+// `db` and a row type keep working from one import.
+export type {
+  AttemptRow,
+  ExerciseType,
+  SessionLogRow,
+  UserRow,
+  UserVerseRow,
+} from './rows'
 
 const DB_PATH = process.env.DB_PATH ?? path.join(process.cwd(), 'data.sqlite')
 

@@ -1,11 +1,8 @@
 import { Router, type Request } from 'express'
-import {
-  db,
-  type AttemptRow,
-  type UserRow,
-  type UserVerseRow,
-} from '../db/client'
+import { db, type AttemptRow, type UserRow } from '../db/client'
+import * as userVerses from '../db/userVerseRepository'
 import { browseStatusFor } from '../domain/stage'
+import { legacyUserVerseBody } from '../domain/userVerse'
 import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
 import { translationFor } from '../lib/translation'
@@ -35,13 +32,7 @@ versesRouter.get('/verses', (req, res) => {
     return
   }
 
-  const byVerseId = new Map(
-    (
-      db
-        .prepare('SELECT * FROM user_verse WHERE user_id = ?')
-        .all(id) as UserVerseRow[]
-    ).map((row) => [row.verse_id, row]),
-  )
+  const progressByVerseId = userVerses.byVerseIdForUser(id)
 
   // `orderBy=canon` returns Bible order (Genesis through Revelation);
   // anything else (including omitted) keeps the curriculum order.
@@ -51,19 +42,19 @@ versesRouter.get('/verses', (req, res) => {
       : versesInOrder(translation)
 
   const verses = bank.map((verse) => {
-    const row = byVerseId.get(verse.id)
+    const progress = progressByVerseId.get(verse.id)
     return {
       id: verse.id,
       reference: verse.reference,
       order: verse.order,
-      status: browseStatusFor(row?.stage),
-      stage: row?.stage ?? null,
+      status: browseStatusFor(progress?.stage),
+      stage: progress?.stage ?? null,
       // Pulled out of review and waiting for a slot — a flagged variant of
       // review rather than a browse status of its own.
-      needsRelearning: row?.needs_relearning === 1,
-      slot: row?.slot ?? null,
+      needsRelearning: progress?.needsRelearning ?? false,
+      slot: progress?.slot ?? null,
       // Graduation is an achievement the UI can badge, not a status of its own.
-      graduatedAt: row?.graduated_at ?? null,
+      graduatedAt: progress?.graduatedAt ?? null,
       text: verse.text,
     }
   })
@@ -86,22 +77,20 @@ versesRouter.get('/verses/:id', (req, res) => {
     return
   }
 
-  const row = db
-    .prepare('SELECT * FROM user_verse WHERE user_id = ? AND verse_id = ?')
-    .get(id, verse.id) as UserVerseRow | undefined
+  const progress = userVerses.findByUserAndVerse(id, verse.id)
 
-  const attempts = row
+  const attempts = progress
     ? (db
         .prepare(
           'SELECT * FROM attempt WHERE user_verse_id = ? ORDER BY created_at DESC LIMIT 100',
         )
-        .all(row.id) as AttemptRow[])
+        .all(progress.id) as AttemptRow[])
     : []
 
   // Scheduling lives on the row itself; a learning or queued verse has none.
   const schedule =
-    row?.due_at != null
-      ? { dueAt: row.due_at, intervalDays: row.interval_days }
+    progress?.dueAt != null
+      ? { dueAt: progress.dueAt, intervalDays: progress.intervalDays }
       : null
 
   // Where this verse sits in the practice queue (1 = next up), or null when
@@ -118,9 +107,9 @@ versesRouter.get('/verses/:id', (req, res) => {
     },
     themes: themesForVerse(verse.id).map((t) => ({ id: t.id, name: t.name })),
     queuePosition: queueIndex === -1 ? null : queueIndex + 1,
-    status: browseStatusFor(row?.stage),
-    graduatedAt: row?.graduated_at ?? null,
-    userVerse: row ?? null,
+    status: browseStatusFor(progress?.stage),
+    graduatedAt: progress?.graduatedAt ?? null,
+    userVerse: progress ? legacyUserVerseBody(progress) : null,
     schedule,
     history: {
       attempts,

@@ -1,12 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { z } from 'zod'
-import {
-  db,
-  type SessionLogRow,
-  type UserRow,
-  type UserVerseRow,
-} from '../db/client'
+import { db, type SessionLogRow, type UserRow } from '../db/client'
+import * as userVerses from '../db/userVerseRepository'
+import { legacyUserVerseBody } from '../domain/userVerse'
 import { todayInTimezone } from '../lib/dates'
 import { translationFor } from '../lib/translation'
 import { userId } from '../middleware/auth'
@@ -71,10 +68,7 @@ sessionRouter.post('/attempt', (req, res) => {
     return
   }
 
-  const userVerse = db
-    .prepare('SELECT * FROM user_verse WHERE id = ? AND user_id = ?')
-    .get(parsed.data.userVerseId, id) as UserVerseRow | undefined
-
+  const userVerse = userVerses.findByIdForUser(parsed.data.userVerseId, id)
   if (!userVerse) {
     res.status(404).json({ error: 'user_verse not found' })
     return
@@ -87,7 +81,11 @@ sessionRouter.post('/attempt', (req, res) => {
     timezoneFor(id),
   )
 
-  res.json(outcome)
+  res.json({
+    userVerse: legacyUserVerseBody(outcome.userVerse),
+    graduated: outcome.graduated,
+    slotsFilled: outcome.slotsFilled.map(legacyUserVerseBody),
+  })
 })
 
 /**
@@ -121,9 +119,15 @@ sessionRouter.post('/session/complete', (req, res) => {
   // between calls) should still get picked up on a repeat call.
   const slotsFilled = refillSlots(id)
 
-  const { n } = db
-    .prepare('SELECT COUNT(*) AS n FROM session_log WHERE user_id = ?')
-    .get(id) as { n: number }
+  const { sessionsCompleted } = db
+    .prepare(
+      'SELECT COUNT(*) AS sessionsCompleted FROM session_log WHERE user_id = ?',
+    )
+    .get(id) as { sessionsCompleted: number }
 
-  res.json({ recorded: !alreadyLogged, sessionsCompleted: n, slotsFilled })
+  res.json({
+    recorded: !alreadyLogged,
+    sessionsCompleted,
+    slotsFilled: slotsFilled.map(legacyUserVerseBody),
+  })
 })

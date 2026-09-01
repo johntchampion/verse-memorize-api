@@ -1,5 +1,7 @@
-import { db, type UserVerseRow } from '../db/client'
+import { db } from '../db/client'
+import * as userVerses from '../db/userVerseRepository'
 import { isLearningStage } from '../domain/stage'
+import type { UserVerse } from '../domain/userVerse'
 import { getTheme } from '../data/themes'
 import { versesInOrder } from '../data/verses'
 
@@ -17,27 +19,24 @@ import { versesInOrder } from '../data/verses'
  * and slotting or graduating a verse needs no queue bookkeeping.
  */
 
-/** Whether a verse (by its row, if any) currently belongs in the queue. */
-export function isQueued(row: UserVerseRow | undefined): boolean {
-  if (!row) return true
-  if (row.needs_relearning === 1) return true
-  return isLearningStage(row.stage) && row.slot === null
+/** Whether a verse (by its progress, if any) currently belongs in the queue. */
+export function isQueued(verse: UserVerse | undefined): boolean {
+  if (!verse) return true
+  if (verse.needsRelearning) return true
+  return isLearningStage(verse.stage) && verse.slot === null
 }
 
-/** True for a queued verse that carries saved progress rather than being
-    untouched — it re-enters practice where it left off. */
-export function isInProgress(row: UserVerseRow | undefined): boolean {
-  return row !== undefined && isQueued(row)
-}
-
-export function rowsByVerseId(userId: string): Map<string, UserVerseRow> {
-  return new Map(
-    (
-      db
-        .prepare('SELECT * FROM user_verse WHERE user_id = ?')
-        .all(userId) as UserVerseRow[]
-    ).map((row) => [row.verse_id, row]),
-  )
+/**
+ * True for a queued verse the user has already worked on — swapped out of a
+ * slot, or dropped back for relearning — rather than one they have never
+ * touched. It re-enters practice where it left off, which is why it sorts
+ * ahead of untouched verses in the default order.
+ *
+ * Having a user_verse row at all is exactly what distinguishes the two, since
+ * the row is created the moment a verse is first slotted.
+ */
+export function hasSavedProgress(verse: UserVerse | undefined): boolean {
+  return verse !== undefined
 }
 
 function storedOrder(userId: string): string[] | null {
@@ -85,9 +84,9 @@ export function hasCustomOrder(userId: string): boolean {
  * free to be moved like anything else.
  */
 export function queueVerseIds(userId: string): string[] {
-  const rows = rowsByVerseId(userId)
-  const eligible = versesInOrder().filter((v) => isQueued(rows.get(v.id)))
-  const inProgress = (id: string) => isInProgress(rows.get(id))
+  const byVerseId = userVerses.byVerseIdForUser(userId)
+  const eligible = versesInOrder().filter((v) => isQueued(byVerseId.get(v.id)))
+  const inProgress = (id: string) => hasSavedProgress(byVerseId.get(id))
 
   const stored = storedOrder(userId)
   if (!stored) {

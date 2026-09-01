@@ -5,14 +5,16 @@ import { THEMES, themesForVerse } from '../data/themes'
 import { versesInOrder } from '../data/verses'
 import { translationFor } from '../lib/translation'
 import { userId } from '../middleware/auth'
+import * as userVerses from '../db/userVerseRepository'
+import { legacyUserVerseBody } from '../domain/userVerse'
 import {
   QueueError,
   hasCustomOrder,
+  hasSavedProgress,
   moveThemeToTop,
   moveVerseToFront,
   queueVerseIds,
   resetQueueOrder,
-  rowsByVerseId,
   setQueueOrder,
 } from '../services/queue'
 import { SlotError, replaceSlot } from '../services/slotRefill'
@@ -31,7 +33,7 @@ function translationOf(req: Request, userId: string): string | undefined {
  * per-verse state, plus the themes with how much of each is still queued.
  */
 function queuePayload(userId: string, translation: string) {
-  const rows = rowsByVerseId(userId)
+  const progressByVerseId = userVerses.byVerseIdForUser(userId)
   const byId = new Map(versesInOrder(translation).map((v) => [v.id, v]))
   const order = queueVerseIds(userId)
   const queued = new Set(order)
@@ -42,18 +44,16 @@ function queuePayload(userId: string, translation: string) {
     queue: order.flatMap((verseId) => {
       const verse = byId.get(verseId)
       if (!verse) return []
-      const row = rows.get(verseId)
+      const progress = progressByVerseId.get(verseId)
       return [
         {
           id: verse.id,
           reference: verse.reference,
           order: verse.order,
           text: verse.text,
-          // Carries saved progress (swapped out of a slot, or relearning) —
-          // it re-enters practice where it left off.
-          inProgress: row !== undefined,
-          relearning: row?.needs_relearning === 1,
-          stage: row?.stage ?? null,
+          inProgress: hasSavedProgress(progress),
+          relearning: progress?.needsRelearning ?? false,
+          stage: progress?.stage ?? null,
           themeIds: themesForVerse(verse.id).map((t) => t.id),
         },
       ]
@@ -219,7 +219,11 @@ queueRouter.post(
     )
     // A displaced verse should come back soon: it takes the next-up spot
     // rather than sinking to wherever the default order would put it.
-    if (displaced) moveVerseToFront(id, displaced.verse_id)
-    res.json({ ...queuePayload(id, translation), placed, displaced })
+    if (displaced) moveVerseToFront(id, displaced.verseId)
+    res.json({
+      ...queuePayload(id, translation),
+      placed: legacyUserVerseBody(placed),
+      displaced: displaced ? legacyUserVerseBody(displaced) : null,
+    })
   }),
 )

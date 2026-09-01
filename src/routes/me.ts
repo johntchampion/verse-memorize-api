@@ -1,11 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import {
-  db,
-  type SessionLogRow,
-  type UserRow,
-  type UserVerseRow,
-} from '../db/client'
+import { db, type SessionLogRow, type UserRow } from '../db/client'
+import * as userVerses from '../db/userVerseRepository'
 import {
   getVerse,
   isTranslation,
@@ -53,15 +49,8 @@ function profileFor(id: string) {
     )
     .all(id) as SessionLogRow[]
 
-  const active = db
-    .prepare(
-      'SELECT * FROM user_verse WHERE user_id = ? AND slot IS NOT NULL ORDER BY slot',
-    )
-    .all(id) as UserVerseRow[]
-
-  const { total } = db
-    .prepare('SELECT COUNT(*) AS total FROM user_verse WHERE user_id = ?')
-    .get(id) as { total: number }
+  const active = userVerses.slottedForUser(id)
+  const versesStarted = userVerses.countForUser(id)
 
   const today = todayInTimezone(user.timezone)
   const translation = resolveTranslation(user.translation)
@@ -78,25 +67,25 @@ function profileFor(id: string) {
     streak: currentStreak(sessionDays, today),
     completedToday: sessionDays.has(today),
     sessionsCompleted: sessions.length,
-    versesStarted: total,
+    versesStarted,
     slots: {
       max: MAX_SLOTS,
-      active: active.map((row) => ({
-        slot: row.slot,
-        userVerseId: row.id,
-        verseId: row.verse_id,
-        reference: getVerse(row.verse_id, translation)?.reference ?? null,
-        stage: row.stage,
-        consecutiveCorrect: row.consecutive_correct,
-        consecutiveIncorrect: row.consecutive_incorrect,
+      active: active.map((verse) => ({
+        slot: verse.slot,
+        userVerseId: verse.id,
+        verseId: verse.verseId,
+        reference: getVerse(verse.verseId, translation)?.reference ?? null,
+        stage: verse.stage,
+        consecutiveCorrect: verse.consecutiveCorrect,
+        consecutiveIncorrect: verse.consecutiveIncorrect,
         // The correct-run only counts toward an upgrade if it was accrued
         // today, so the client needs the date to tell a live run from a dead
         // one carried over from yesterday.
-        streakDate: row.streak_date,
+        streakDate: verse.streakDate,
         // The one-tier-change-per-day cap, already spent: further correct
         // answers today are practice, not progress.
         tierChangeUsedToday:
-          row.last_upgrade_date === today || row.last_downgrade_date === today,
+          verse.lastUpgradeDate === today || verse.lastDowngradeDate === today,
       })),
     },
   }

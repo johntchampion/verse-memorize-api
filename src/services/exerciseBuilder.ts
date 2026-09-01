@@ -1,4 +1,5 @@
-import type { ExerciseType, Stage } from '../db/client'
+import type { ExerciseType } from '../db/client'
+import type { Stage } from '../domain/stage'
 import type { Verse } from '../data/verses'
 import { WORD_PATTERN } from '../lib/words'
 

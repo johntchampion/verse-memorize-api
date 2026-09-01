@@ -1,4 +1,4 @@
-import { db, type UserVerseRow } from '../db/client'
+import * as userVerses from '../db/userVerseRepository'
 import { DEFAULT_TRANSLATION, getVerse } from '../data/verses'
 import { todayInTimezone } from '../lib/dates'
 import { isLearningStage, isReviewStage } from '../domain/stage'
@@ -30,36 +30,33 @@ export function buildTodaySession(
 ): SessionExercise[] {
   const today = todayInTimezone(timezone)
 
-  const rows = db
-    .prepare('SELECT * FROM user_verse WHERE user_id = ?')
-    .all(userId) as UserVerseRow[]
+  // Each active verse contributes its own run of exercises; the runs are
+  // drained round-robin below so no verse is drilled back to back.
+  const runs: SessionExercise[][] = []
 
-  // One per-verse queue per active verse; each is drained round-robin below.
-  const perVerse: SessionExercise[][] = []
-
-  for (const row of rows) {
-    const verse = getVerse(row.verse_id, translation)
+  for (const progress of userVerses.allForUser(userId)) {
+    const verse = getVerse(progress.verseId, translation)
     if (!verse) continue // Verse pulled from the bank; skip rather than 500.
 
-    if (isReviewStage(row.stage)) {
-      // A null due_at means unscheduled — a verse queued for relearning sits
+    if (isReviewStage(progress.stage)) {
+      // A null dueAt means unscheduled — a verse queued for relearning sits
       // out of the rotation until a slot picks it up.
-      if (!row.due_at || row.due_at > today) continue
-      perVerse.push([
+      if (!progress.dueAt || progress.dueAt > today) continue
+      runs.push([
         {
-          ...buildExercise(verse, row.id, row.stage),
-          stage: row.stage,
+          ...buildExercise(verse, progress.id, progress.stage),
+          stage: progress.stage,
           queue: 'review',
         },
       ])
       continue
     }
 
-    if (isLearningStage(row.stage) && row.slot !== null) {
-      perVerse.push(
+    if (isLearningStage(progress.stage) && progress.slot !== null) {
+      runs.push(
         Array.from({ length: EXERCISES_PER_LEARNING_VERSE }, (_, instance) => ({
-          ...buildExercise(verse, row.id, row.stage, instance),
-          stage: row.stage,
+          ...buildExercise(verse, progress.id, progress.stage, instance),
+          stage: progress.stage,
           queue: 'learning' as const,
         })),
       )
@@ -67,10 +64,10 @@ export function buildTodaySession(
   }
 
   const queue: SessionExercise[] = []
-  const depth = Math.max(0, ...perVerse.map((q) => q.length))
-  for (let i = 0; i < depth; i += 1) {
-    for (const verseQueue of perVerse) {
-      if (i < verseQueue.length) queue.push(verseQueue[i])
+  const longestRun = Math.max(0, ...runs.map((run) => run.length))
+  for (let i = 0; i < longestRun; i += 1) {
+    for (const run of runs) {
+      if (i < run.length) queue.push(run[i])
     }
   }
 
