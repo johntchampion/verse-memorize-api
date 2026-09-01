@@ -128,13 +128,11 @@ describe('POST /api/attempt', () => {
       .send({ userVerseId, exerciseType: 'tile_fill_blank', correct: 'yes' })
     expect(badCorrect.status).toBe(400)
 
-    const badId = await authed(token)
-      .post('/api/attempt')
-      .send({
-        userVerseId: 'not-a-uuid',
-        exerciseType: 'tile_fill_blank',
-        correct: true,
-      })
+    const badId = await authed(token).post('/api/attempt').send({
+      userVerseId: 'not-a-uuid',
+      exerciseType: 'tile_fill_blank',
+      correct: true,
+    })
     expect(badId.status).toBe(400)
   })
 
