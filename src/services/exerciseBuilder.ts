@@ -95,8 +95,11 @@ function tokenize(text: string): Token[] {
     })
 }
 
+/** Returns a float in [0, 1), like Math.random but seeded and reproducible. */
+type Random = () => number
+
 /** mulberry32 — small deterministic PRNG so a given seed rebuilds the same exercise. */
-function rng(seed: string): () => number {
+function seededRandom(seed: string): Random {
   let h = 2166136261
   for (let i = 0; i < seed.length; i += 1) {
     h = Math.imul(h ^ seed.charCodeAt(i), 16777619)
@@ -111,10 +114,10 @@ function rng(seed: string): () => number {
   }
 }
 
-function shuffle<T>(items: T[], next: () => number): T[] {
+function shuffle<T>(items: T[], random: Random): T[] {
   const out = [...items]
   for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(next() * (i + 1))
+    const j = Math.floor(random() * (i + 1))
     ;[out[i], out[j]] = [out[j], out[i]]
   }
   return out
@@ -131,7 +134,7 @@ function shuffle<T>(items: T[], next: () => number): T[] {
 function chooseBlanks(
   tokens: Token[],
   density: number,
-  next: () => number,
+  random: Random,
 ): Set<number> {
   const eligible = tokens
     .map((t, i) => ({ t, i }))
@@ -147,11 +150,11 @@ function chooseBlanks(
 
   const content = shuffle(
     eligible.filter(({ t }) => !CONNECTORS.has(t.core)),
-    next,
+    random,
   )
   const connectors = shuffle(
     eligible.filter(({ t }) => CONNECTORS.has(t.core)),
-    next,
+    random,
   )
 
   return new Set([...content, ...connectors].slice(0, target).map(({ i }) => i))
@@ -183,8 +186,8 @@ export function buildExercise(
 ): Exercise {
   const rule = STAGE_RULES[stage]
   const tokens = tokenize(verse.text)
-  const next = rng(`${verse.id}:${stage}:${instance}`)
-  const blanks = chooseBlanks(tokens, rule.density, next)
+  const random = seededRandom(`${verse.id}:${stage}:${instance}`)
+  const blanks = chooseBlanks(tokens, rule.density, random)
 
   const blankedText = tokens
     .map((token, i) => {
@@ -210,8 +213,8 @@ export function buildExercise(
       verse.decoys.length,
       Math.max(3, Math.ceil(answers.length / 2)),
     )
-    const decoys = shuffle(verse.decoys, next).slice(0, decoyCount)
-    wordBank = shuffle([...answers, ...decoys], next)
+    const decoys = shuffle(verse.decoys, random).slice(0, decoyCount)
+    wordBank = shuffle([...answers, ...decoys], random)
   }
 
   return {
@@ -222,9 +225,4 @@ export function buildExercise(
     blankedText,
     wordBank,
   }
-}
-
-/** The exercise type a given stage is drilled with. */
-export function exerciseTypeForStage(stage: Stage): ExerciseType {
-  return STAGE_RULES[stage].type
 }

@@ -27,7 +27,7 @@ versesRouter.get('/verses', (req, res) => {
       ? versesInCanonOrder(translationCode)
       : versesInOrder(translationCode)
 
-  const verses = bank.map((verse) => {
+  const listed = bank.map((verse) => {
     const progress = progressByVerseId.get(verse.id)
     return {
       id: verse.id,
@@ -45,7 +45,7 @@ versesRouter.get('/verses', (req, res) => {
     }
   })
 
-  res.json({ translation: translationCode, verses })
+  res.json({ translation: translationCode, verses: listed })
 })
 
 /** Single verse detail plus this user's history. */
