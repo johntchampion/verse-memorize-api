@@ -54,8 +54,7 @@ authRouter.post('/signup', async (req, res) => {
     translation ? normalizeTranslation(translation)! : DEFAULT_TRANSLATION,
   )
 
-  // Slot 1 is assigned at signup; slots 2 and 3 unlock off session_log, so
-  // this fills exactly one.
+  // All 3 slots are live immediately — there is no ramp-up.
   refillSlots(id)
 
   res.status(201).json({ token: signToken(id), userId: id })

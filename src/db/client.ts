@@ -45,9 +45,10 @@ function addColumnIfMissing(
  * IF NOT EXISTS or guarded, so this is safe to run on every boot — there is no
  * migration tooling in v1.
  *
- * That also means it cannot reshape a table that already exists, so a database
- * written before the progression rewrite is rejected outright rather than left
- * to fail confusingly at query time.
+ * That also means it cannot reshape a table that already exists. There is no
+ * guard against opening a database written before the progression rewrite (one
+ * with a `review_schedule` table or a `user_verse.strength` column) — such a
+ * file opens and then fails confusingly at query time. Wipe it and start fresh.
  */
 export function migrate(): void {
   // Resolved relative to this module so it works from both src/ (tsx) and

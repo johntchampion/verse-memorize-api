@@ -69,7 +69,8 @@ versesRouter.get('/verses/:id', (req, res) => {
         .all(progress.id) as AttemptRow[])
     : []
 
-  // Scheduling lives on the row itself; a learning or queued verse has none.
+  // Only review and mastered are scheduled; a learning or queued verse has no
+  // due date at all, which is what a null schedule means here.
   const schedule =
     progress?.dueAt != null
       ? { dueAt: progress.dueAt, intervalDays: progress.intervalDays }

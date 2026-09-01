@@ -71,11 +71,15 @@ CREATE TABLE IF NOT EXISTS session_log (
                                  -- drives the streak on GET /api/me
 );
 
--- Access-path indexes. Each one backs a lookup the app actually makes: session
--- build reads user_verse by user, slot refill pops the oldest queued relearner,
--- verse detail reads attempt history, and the profile reads session_log by user
--- for the streak.
+-- Access-path indexes. Each backs a lookup the app makes: session build and the
+-- queue both read user_verse by user, verse detail reads attempt history, and
+-- the profile reads session_log by user for the streak.
 CREATE INDEX IF NOT EXISTS idx_user_verse_user ON user_verse(user_id);
+
+-- Currently unused: refill once popped the oldest queued relearner, but it now
+-- reads the stored queue order (services/queue.ts) and finds relearners through
+-- idx_user_verse_user instead. Kept because existing databases already have it
+-- and dropping it needs a migration this schema has no mechanism for.
 CREATE INDEX IF NOT EXISTS idx_user_verse_relearn
   ON user_verse(user_id, needs_relearning, relearning_queued_at);
 CREATE INDEX IF NOT EXISTS idx_attempt_uv ON attempt(user_verse_id, created_at);

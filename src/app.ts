@@ -20,7 +20,6 @@ export function createApp() {
 
   app.use('/auth', authRouter)
 
-  // JWT middleware guards every /api/* route.
   app.use('/api', requireAuth, sessionRouter)
   app.use('/api', requireAuth, versesRouter)
   app.use('/api', requireAuth, queueRouter)

@@ -249,7 +249,7 @@ waiting for two fresh misses.
 ### Tuning constants
 
 All of these are exported from
-[`stageMachine.ts`](./src/services/stageMachine.ts) — tune them there, never at a
+[`progression.ts`](./src/domain/progression.ts) — tune them there, never at a
 call site.
 
 | Constant                    | Value           | Meaning                                           |
@@ -294,22 +294,44 @@ src/
   data/verses.ts            Loads + validates the bank; the only way in
   data/translations/        One JSON file per translation, plus catalog.ts
   db/schema.sql             Tables; applied at boot, all IF NOT EXISTS
-  db/client.ts              Connection, row types, migrate()
+  db/client.ts              Connection and migrate()
+  db/rows.ts                Raw row shapes, one per table
+  db/userVerseRepository.ts Every user_verse query; returns domain models
+  domain/
+    stage.ts                The Stage union and the ladder between stages
+    userVerse.ts            UserVerse model, row mapping, wire-format shim
+    progression.ts          Pure attempt -> next-state rules + constants
   lib/dates.ts              Timezone-aware day boundaries
+  lib/errors.ts             ApiError and friends; status codes for services
+  lib/http.ts               parseBody
   lib/translation.ts        Resolves the translation for a request
   lib/words.ts              Shared word splitting (tiles + validator)
   middleware/auth.ts        JWT sign/verify, requireAuth
-  routes/                   auth, session, verses, me, translations
+  middleware/translation.ts Resolves req.translation, 400s on unknown
+  routes/                   auth, session, verses, queue, me, translations
   services/
-    stageMachine.ts         Stage/streak/schedule transitions + constants
+    stageMachine.ts         Applies a progression transition + side effects
     slotRefill.ts           Slot fill and relearning priority
+    queue.ts                Practice queue membership and ordering
     sessionBuilder.ts       Builds today's queue
     exerciseBuilder.ts      Blanking and word banks
   app.ts / server.ts        Wiring and boot
 ```
 
-Routes stay thin: validate with `zod`, check ownership, delegate to a service.
-Domain rules belong in `services/`.
+Three layers, and the boundaries are the point:
+
+- **`domain/`** is pure. No database, no clock, no Express. `progression.ts`
+  takes a verse's progress and an answer and returns the progress that should
+  replace it, so the rules can be tested without a server — see
+  `tests/progression.test.ts`.
+- **`services/`** does the things that touch the world: reading, writing,
+  running the follow-up work a domain transition asks for.
+- **`routes/`** stay thin: validate with `zod` via `parseBody`, check ownership,
+  delegate. They throw `QueueError`/`SlotError` rather than building status
+  codes; `app.ts` turns those into responses.
+
+Only `db/` sees a raw snake_case row. Everything above it works with the
+camelCase `UserVerse` model.
 
 ---
 
@@ -403,8 +425,8 @@ fall back to the default.
 
 ### Tuning the algorithm
 
-Change the exported constants in `stageMachine.ts` (streak thresholds, interval
-ladder) or `STAGE_RULES` in `exerciseBuilder.ts` (blank densities). Both are
+Change the exported constants in `domain/progression.ts` (streak thresholds,
+interval ladder) or `STAGE_RULES` in `exerciseBuilder.ts` (blank densities). Both are
 single-source; nothing hardcodes these numbers elsewhere.
 
 ### Wiping the database
@@ -450,11 +472,12 @@ dropping a column still needs a manual `ALTER TABLE` against the live file.
 Adding a non-`.ts` file under `src/` also means updating the `build` script, which
 copies `schema.sql` and `data/translations/*.json` into `dist/` by hand.
 
-`migrate()` refuses to open a database written before the progression rewrite
-(one with a `review_schedule` table or a `user_verse.strength` column) rather
-than half-applying the new schema over it. Wipe the file and start fresh.
+`migrate()` does **not** guard against a database written before the progression
+rewrite (one with a `review_schedule` table or a `user_verse.strength` column).
+Because every statement is `IF NOT EXISTS`, such a file opens cleanly and then
+fails confusingly at query time. Wipe it and start fresh.
 
-Adding a stage is deliberately compile-checked: widen `Stage` in `db/client.ts`
+Adding a stage is deliberately compile-checked: widen `Stage` in `domain/stage.ts`
 and `tsc` will point at every switch and lookup table that needs the new case.
 
 ---

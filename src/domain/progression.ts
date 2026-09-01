@@ -24,9 +24,7 @@ import {
 } from './stage'
 import type { VerseProgress } from './userVerse'
 
-// ---------------------------------------------------------------------------
 // Tuning constants. Change these here, not at the call sites.
-// ---------------------------------------------------------------------------
 
 /** Consecutive correct completions needed to advance a learning tier. */
 export const TIER_ADVANCE_THRESHOLD = 3

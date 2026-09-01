@@ -1,11 +1,10 @@
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 
-// 30-day JWT, no refresh tokens.
+/** Long-lived because there are no refresh tokens: expiry means a fresh login. */
 const TOKEN_TTL = '30d'
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       userId?: string
