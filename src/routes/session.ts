@@ -5,47 +5,33 @@ import { db, type SessionLogRow, type UserRow } from '../db/client'
 import * as userVerses from '../db/userVerseRepository'
 import { legacyUserVerseBody } from '../domain/userVerse'
 import { todayInTimezone } from '../lib/dates'
-import { translationFor } from '../lib/translation'
+import { parseBody } from '../lib/http'
 import { userId } from '../middleware/auth'
+import { resolveTranslation, translation } from '../middleware/translation'
 import { buildTodaySession } from '../services/sessionBuilder'
 import { refillSlots } from '../services/slotRefill'
 import { recordAttempt } from '../services/stageMachine'
 
 export const sessionRouter = Router()
 
-/** The per-user settings the session endpoints need, in one read. */
-interface Settings {
-  timezone: string
-  /** Raw stored preference; null for a user row that has gone missing. */
-  translation: string | null
-}
-
-function settingsFor(id: string): Settings {
-  const user = db
-    .prepare('SELECT timezone, translation FROM users WHERE id = ?')
-    .get(id) as Pick<UserRow, 'timezone' | 'translation'> | undefined
-  return {
-    timezone: user?.timezone ?? 'UTC',
-    translation: user?.translation ?? null,
-  }
-}
-
+/** UTC for a user row that has gone missing, rather than throwing. */
 function timezoneFor(id: string): string {
-  return settingsFor(id).timezone
+  const user = db.prepare('SELECT timezone FROM users WHERE id = ?').get(id) as
+    Pick<UserRow, 'timezone'> | undefined
+  return user?.timezone ?? 'UTC'
 }
 
 /** Today's ordered exercise queue. */
-sessionRouter.get('/session/today', (req, res) => {
+sessionRouter.get('/session/today', resolveTranslation, (req, res) => {
   const id = userId(req)
-  const settings = settingsFor(id)
-  const translation = translationFor(req, settings.translation)
-  if (!translation) {
-    res.status(400).json({ error: 'unknown translation' })
-    return
-  }
+  const translationCode = translation(req)
 
-  const exercises = buildTodaySession(id, settings.timezone, translation)
-  res.json({ translation, exercises, count: exercises.length })
+  const exercises = buildTodaySession(id, timezoneFor(id), translationCode)
+  res.json({
+    translation: translationCode,
+    exercises,
+    count: exercises.length,
+  })
 })
 
 const attemptBody = z.object({
@@ -60,15 +46,10 @@ const attemptBody = z.object({
  */
 sessionRouter.post('/attempt', (req, res) => {
   const id = userId(req)
-  const parsed = attemptBody.safeParse(req.body)
-  if (!parsed.success) {
-    res
-      .status(400)
-      .json({ error: 'invalid body', details: z.treeifyError(parsed.error) })
-    return
-  }
+  const body = parseBody(attemptBody, req, res)
+  if (!body) return
 
-  const userVerse = userVerses.findByIdForUser(parsed.data.userVerseId, id)
+  const userVerse = userVerses.findByIdForUser(body.userVerseId, id)
   if (!userVerse) {
     res.status(404).json({ error: 'user_verse not found' })
     return
@@ -76,8 +57,8 @@ sessionRouter.post('/attempt', (req, res) => {
 
   const outcome = recordAttempt(
     userVerse,
-    parsed.data.exerciseType,
-    parsed.data.correct,
+    body.exerciseType,
+    body.correct,
     timezoneFor(id),
   )
 

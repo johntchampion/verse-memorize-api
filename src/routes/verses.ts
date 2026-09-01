@@ -1,45 +1,31 @@
-import { Router, type Request } from 'express'
-import { db, type AttemptRow, type UserRow } from '../db/client'
+import { Router } from 'express'
+import { db, type AttemptRow } from '../db/client'
 import * as userVerses from '../db/userVerseRepository'
 import { browseStatusFor } from '../domain/stage'
 import { legacyUserVerseBody } from '../domain/userVerse'
 import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
-import { translationFor } from '../lib/translation'
 import { userId } from '../middleware/auth'
+import { resolveTranslation, translation } from '../middleware/translation'
 import { queueVerseIds } from '../services/queue'
 
 export const versesRouter = Router()
 
-/**
- * The translation to serve this request in — the account preference unless
- * `?translation=` overrides it. Returns undefined for an unknown code so the
- * handler can 400 rather than silently serving something else.
- */
-function translationOf(req: Request, id: string): string | undefined {
-  const user = db
-    .prepare('SELECT translation FROM users WHERE id = ?')
-    .get(id) as Pick<UserRow, 'translation'> | undefined
-  return translationFor(req, user?.translation)
-}
+// Both routes serve verse text, so both need a resolved translation.
+versesRouter.use(resolveTranslation)
 
 /** The full bank with per-user status. */
 versesRouter.get('/verses', (req, res) => {
   const id = userId(req)
-  const translation = translationOf(req, id)
-  if (!translation) {
-    res.status(400).json({ error: 'unknown translation' })
-    return
-  }
-
+  const translationCode = translation(req)
   const progressByVerseId = userVerses.byVerseIdForUser(id)
 
   // `orderBy=canon` returns Bible order (Genesis through Revelation);
   // anything else (including omitted) keeps the curriculum order.
   const bank =
     req.query.orderBy === 'canon'
-      ? versesInCanonOrder(translation)
-      : versesInOrder(translation)
+      ? versesInCanonOrder(translationCode)
+      : versesInOrder(translationCode)
 
   const verses = bank.map((verse) => {
     const progress = progressByVerseId.get(verse.id)
@@ -59,19 +45,15 @@ versesRouter.get('/verses', (req, res) => {
     }
   })
 
-  res.json({ translation, verses })
+  res.json({ translation: translationCode, verses })
 })
 
 /** Single verse detail plus this user's history. */
 versesRouter.get('/verses/:id', (req, res) => {
   const id = userId(req)
-  const translation = translationOf(req, id)
-  if (!translation) {
-    res.status(400).json({ error: 'unknown translation' })
-    return
-  }
+  const translationCode = translation(req)
 
-  const verse = getVerse(req.params.id, translation)
+  const verse = getVerse(req.params.id, translationCode)
   if (!verse) {
     res.status(404).json({ error: 'verse not found' })
     return
@@ -98,7 +80,7 @@ versesRouter.get('/verses/:id', (req, res) => {
   const queueIndex = queueVerseIds(id).indexOf(verse.id)
 
   res.json({
-    translation,
+    translation: translationCode,
     verse: {
       id: verse.id,
       reference: verse.reference,

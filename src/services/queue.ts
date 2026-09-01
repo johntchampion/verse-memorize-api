@@ -2,6 +2,7 @@ import { db } from '../db/client'
 import * as userVerses from '../db/userVerseRepository'
 import { isLearningStage } from '../domain/stage'
 import type { UserVerse } from '../domain/userVerse'
+import { QueueError } from '../lib/errors'
 import { getTheme } from '../data/themes'
 import { versesInOrder } from '../data/verses'
 
@@ -163,6 +164,3 @@ export function moveVerseToFront(userId: string, verseId: string): void {
   }
   writeOrder(userId, [verseId, ...current.filter((id) => id !== verseId)])
 }
-
-/** Invalid queue input — routes map it to a 400/404 rather than a 500. */
-export class QueueError extends Error {}

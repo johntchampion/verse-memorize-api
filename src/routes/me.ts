@@ -9,6 +9,7 @@ import {
   resolveTranslation,
 } from '../data/verses'
 import { addDays, todayInTimezone } from '../lib/dates'
+import { parseBody } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { MAX_SLOTS } from '../services/slotRefill'
 
@@ -135,14 +136,10 @@ function isValidTimezone(timezone: string): boolean {
  */
 meRouter.patch('/me', (req, res) => {
   const id = userId(req)
-  const parsed = patchBody.safeParse(req.body)
-  if (!parsed.success) {
-    res
-      .status(400)
-      .json({ error: 'invalid body', details: z.treeifyError(parsed.error) })
-    return
-  }
-  const { timezone, translation } = parsed.data
+  const body = parseBody(patchBody, req, res)
+  if (!body) return
+
+  const { timezone, translation } = body
 
   if (timezone !== undefined && !isValidTimezone(timezone)) {
     res.status(400).json({ error: 'unknown timezone' })

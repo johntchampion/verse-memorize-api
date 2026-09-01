@@ -1,4 +1,5 @@
 import { getVerse } from '../data/verses'
+import { SlotError } from '../lib/errors'
 import * as userVerses from '../db/userVerseRepository'
 import type { UserVerse } from '../domain/userVerse'
 import { isQueued, queueVerseIds } from './queue'
@@ -90,15 +91,5 @@ export function replaceSlot(
     placed,
     // Re-read: clearSlot changed it after the copy above was taken.
     displaced: displaced ? userVerses.findById(displaced.id)! : null,
-  }
-}
-
-/** Invalid slot input — routes map it to a 4xx rather than a 500. */
-export class SlotError extends Error {
-  status: number
-
-  constructor(message: string, status: number) {
-    super(message)
-    this.status = status
   }
 }

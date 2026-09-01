@@ -8,6 +8,7 @@ import {
   isTranslation,
   normalizeTranslation,
 } from '../data/verses'
+import { parseBody } from '../lib/http'
 import { signToken } from '../middleware/auth'
 import { refillSlots } from '../services/slotRefill'
 
@@ -23,15 +24,11 @@ const credentials = z.object({
 export const authRouter = Router()
 
 authRouter.post('/signup', async (req, res) => {
-  const parsed = credentials.safeParse(req.body)
-  if (!parsed.success) {
-    res
-      .status(400)
-      .json({ error: 'invalid body', details: z.treeifyError(parsed.error) })
-    return
-  }
-  const { password, timezone, translation } = parsed.data
-  const email = parsed.data.email.trim().toLowerCase()
+  const body = parseBody(credentials, req, res)
+  if (!body) return
+
+  const { password, timezone, translation } = body
+  const email = body.email.trim().toLowerCase()
 
   if (translation !== undefined && !isTranslation(translation)) {
     res.status(400).json({ error: 'unknown translation' })
@@ -67,6 +64,8 @@ authRouter.post('/signup', async (req, res) => {
 authRouter.post('/login', async (req, res) => {
   const parsed = credentials.safeParse(req.body)
   if (!parsed.success) {
+    // Deliberately terser than signup's 400: login should not describe which
+    // field was wrong.
     res.status(400).json({ error: 'invalid body' })
     return
   }

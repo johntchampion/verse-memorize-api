@@ -3,6 +3,7 @@ import express, {
   type Request,
   type Response,
 } from 'express'
+import { ApiError } from './lib/errors'
 import { requireAuth } from './middleware/auth'
 import { authRouter } from './routes/auth'
 import { meRouter } from './routes/me'
@@ -31,6 +32,13 @@ export function createApp() {
   })
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    // Express 5 routes both sync throws and rejected promises here, so a
+    // service can signal a client error by throwing from anywhere and the
+    // routes need no try/catch of their own.
+    if (err instanceof ApiError) {
+      res.status(err.status).json({ error: err.message })
+      return
+    }
     console.error(err)
     res.status(500).json({ error: 'internal error' })
   })
