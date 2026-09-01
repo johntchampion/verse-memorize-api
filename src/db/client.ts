@@ -2,12 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 
-export type Stage =
-  | 'learning_light'
-  | 'learning_medium'
-  | 'learning_heavy'
-  | 'review'
-  | 'mastered'
+import type { Stage } from '../domain/stage'
+
+// Stage lives in domain/stage.ts, which owns the behavior that goes with it.
+// Re-exported here because the row types below are typed in terms of it.
+export type { Stage }
 
 export type ExerciseType = 'tile_fill_blank' | 'type_fill_blank'
 

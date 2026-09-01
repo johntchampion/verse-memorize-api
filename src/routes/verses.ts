@@ -2,10 +2,10 @@ import { Router, type Request } from 'express'
 import {
   db,
   type AttemptRow,
-  type Stage,
   type UserRow,
   type UserVerseRow,
 } from '../db/client'
+import { browseStatusFor } from '../domain/stage'
 import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
 import { translationFor } from '../lib/translation'
@@ -24,25 +24,6 @@ function translationOf(req: Request, id: string): string | undefined {
     .prepare('SELECT translation FROM users WHERE id = ?')
     .get(id) as Pick<UserRow, 'translation'> | undefined
   return translationFor(req, user?.translation)
-}
-
-/** Browse-screen status for a verse. Every verse is viewable — "not started"
-    just means the user has no progress against it yet. */
-type VerseStatus = 'not_started' | 'active' | 'review' | 'mastered'
-
-function statusFor(stage: Stage | undefined): VerseStatus {
-  switch (stage) {
-    case undefined:
-      return 'not_started'
-    case 'learning_light':
-    case 'learning_medium':
-    case 'learning_heavy':
-      return 'active'
-    case 'mastered':
-      return 'mastered'
-    case 'review':
-      return 'review'
-  }
 }
 
 /** The full bank with per-user status. */
@@ -75,7 +56,7 @@ versesRouter.get('/verses', (req, res) => {
       id: verse.id,
       reference: verse.reference,
       order: verse.order,
-      status: statusFor(row?.stage),
+      status: browseStatusFor(row?.stage),
       stage: row?.stage ?? null,
       // Pulled out of review and waiting for a slot — a flagged variant of
       // review rather than a browse status of its own.
@@ -137,7 +118,7 @@ versesRouter.get('/verses/:id', (req, res) => {
     },
     themes: themesForVerse(verse.id).map((t) => ({ id: t.id, name: t.name })),
     queuePosition: queueIndex === -1 ? null : queueIndex + 1,
-    status: statusFor(row?.stage),
+    status: browseStatusFor(row?.stage),
     graduatedAt: row?.graduated_at ?? null,
     userVerse: row ?? null,
     schedule,

@@ -1,4 +1,5 @@
 import { db, type UserVerseRow } from '../db/client'
+import { isLearningStage } from '../domain/stage'
 import { getTheme } from '../data/themes'
 import { versesInOrder } from '../data/verses'
 
@@ -16,21 +17,11 @@ import { versesInOrder } from '../data/verses'
  * and slotting or graduating a verse needs no queue bookkeeping.
  */
 
-/** Local duplicate of stageMachine's check, kept here to avoid an import
-    cycle (stageMachine → slotRefill → queue). */
-function inLearning(row: UserVerseRow): boolean {
-  return (
-    row.stage === 'learning_light' ||
-    row.stage === 'learning_medium' ||
-    row.stage === 'learning_heavy'
-  )
-}
-
 /** Whether a verse (by its row, if any) currently belongs in the queue. */
 export function isQueued(row: UserVerseRow | undefined): boolean {
   if (!row) return true
   if (row.needs_relearning === 1) return true
-  return inLearning(row) && row.slot === null
+  return isLearningStage(row.stage) && row.slot === null
 }
 
 /** True for a queued verse that carries saved progress rather than being

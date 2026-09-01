@@ -1,8 +1,8 @@
 import { db, type UserVerseRow } from '../db/client'
 import { DEFAULT_TRANSLATION, getVerse } from '../data/verses'
 import { todayInTimezone } from '../lib/dates'
+import { isLearningStage, isReviewStage } from '../domain/stage'
 import { buildExercise, type Exercise } from './exerciseBuilder'
-import { isLearningStage, isReviewStage } from './stageMachine'
 
 /**
  * Exercise instances generated per learning verse per session. 2-3 is the

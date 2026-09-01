@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
+import { db, type ExerciseType, type UserVerseRow } from '../db/client'
 import {
-  db,
-  type ExerciseType,
+  isLearningStage,
+  nextLearningStage,
+  previousLearningStage,
   type Stage,
-  type UserVerseRow,
-} from '../db/client'
+} from '../domain/stage'
 import { addDays, todayInTimezone } from '../lib/dates'
 import { refillSlots } from './slotRefill'
 import { bumpRelearningToFront } from './queue'
@@ -29,21 +30,6 @@ export const REVIEW_DEMOTION_THRESHOLD = 2
 export const INTERVAL_PROGRESSION = [1, 3, 7, 14, 30] as const
 export const MAX_INTERVAL_DAYS =
   INTERVAL_PROGRESSION[INTERVAL_PROGRESSION.length - 1]
-
-const LEARNING_ORDER: Stage[] = [
-  'learning_light',
-  'learning_medium',
-  'learning_heavy',
-]
-
-export function isLearningStage(stage: Stage): boolean {
-  return LEARNING_ORDER.includes(stage)
-}
-
-/** Stages that surface in the review queue. */
-export function isReviewStage(stage: Stage): boolean {
-  return stage === 'review' || stage === 'mastered'
-}
 
 /** The next rung up the interval ladder, capped at the top. */
 function nextInterval(current: number): number {
@@ -139,14 +125,15 @@ export const recordAttempt = db.transaction(
           s.streak_date = null
 
           if (!tierChangedToday) {
-            const tierIndex = LEARNING_ORDER.indexOf(s.stage)
+            const promoted = nextLearningStage(s.stage)
             s.last_upgrade_date = today
 
-            if (tierIndex < LEARNING_ORDER.length - 1) {
-              s.stage = LEARNING_ORDER[tierIndex + 1]
+            if (promoted) {
+              s.stage = promoted
             } else {
-              // learning_heavy -> review: empty the slot, stamp the graduation
-              // timestamp, and open at the bottom of the interval ladder.
+              // Top of the ladder, so the upgrade graduates instead: empty the
+              // slot, stamp the graduation timestamp, and open at the bottom of
+              // the interval ladder.
               s.stage = 'review'
               s.slot = null
               s.graduated_at = now
@@ -168,10 +155,10 @@ export const recordAttempt = db.transaction(
           // is needed to trigger one again.
           s.consecutive_incorrect = 0
 
-          const tierIndex = LEARNING_ORDER.indexOf(s.stage)
-          // learning_light is the floor — two misses there change nothing.
-          if (tierIndex > 0 && !tierChangedToday) {
-            s.stage = LEARNING_ORDER[tierIndex - 1]
+          // Null at learning_light, the floor — two misses there change nothing.
+          const demoted = previousLearningStage(s.stage)
+          if (demoted && !tierChangedToday) {
+            s.stage = demoted
             s.last_downgrade_date = today
           }
         }
