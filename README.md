@@ -472,10 +472,18 @@ dropping a column still needs a manual `ALTER TABLE` against the live file.
 Adding a non-`.ts` file under `src/` also means updating the `build` script, which
 copies `schema.sql` and `data/translations/*.json` into `dist/` by hand.
 
-`migrate()` does **not** guard against a database written before the progression
-rewrite (one with a `review_schedule` table or a `user_verse.strength` column).
-Because every statement is `IF NOT EXISTS`, such a file opens cleanly and then
-fails confusingly at query time. Wipe it and start fresh.
+`migrate()` **refuses** a database written before the progression rewrite —
+one with a `review_schedule` table, or a `user_verse.strength` or
+`correct_streak_in_tier` column. Because every statement is `IF NOT EXISTS`, the
+current schema cannot reshape that file's `user_verse` table, so it would keep
+running without the scheduling columns (`due_at`, `interval_days`,
+`streak_date`, `needs_relearning`) and fail later, far from the cause.
+
+The check runs before any schema is applied, so a rejected file is left exactly
+as it was rather than half-migrated, and it happens at boot in `server.ts`
+before the port opens. There is no upgrade path — the old 0-100 strength score
+cannot be converted into the streak counters and interval ladder that replaced
+it — so move the file aside and let a fresh one be created.
 
 Adding a stage is deliberately compile-checked: widen `Stage` in `domain/stage.ts`
 and `tsc` will point at every switch and lookup table that needs the new case.
