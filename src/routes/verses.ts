@@ -6,9 +6,11 @@ import {
   type UserRow,
   type UserVerseRow,
 } from '../db/client'
+import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
 import { translationFor } from '../lib/translation'
 import { userId } from '../middleware/auth'
+import { queueVerseIds } from '../services/queue'
 
 export const versesRouter = Router()
 
@@ -24,13 +26,14 @@ function translationOf(req: Request, id: string): string | undefined {
   return translationFor(req, user?.translation)
 }
 
-/** Browse-screen status for a verse. */
-type VerseStatus = 'locked' | 'active' | 'review' | 'mastered'
+/** Browse-screen status for a verse. Every verse is viewable — "not started"
+    just means the user has no progress against it yet. */
+type VerseStatus = 'not_started' | 'active' | 'review' | 'mastered'
 
 function statusFor(stage: Stage | undefined): VerseStatus {
   switch (stage) {
     case undefined:
-      return 'locked'
+      return 'not_started'
     case 'learning_light':
     case 'learning_medium':
     case 'learning_heavy':
@@ -80,9 +83,7 @@ versesRouter.get('/verses', (req, res) => {
       slot: row?.slot ?? null,
       // Graduation is an achievement the UI can badge, not a status of its own.
       graduatedAt: row?.graduated_at ?? null,
-      // Locked verses withhold the text — that is the point of the browse
-      // screen's lock state.
-      text: row ? verse.text : null,
+      text: verse.text,
     }
   })
 
@@ -122,14 +123,20 @@ versesRouter.get('/verses/:id', (req, res) => {
       ? { dueAt: row.due_at, intervalDays: row.interval_days }
       : null
 
+  // Where this verse sits in the practice queue (1 = next up), or null when
+  // it isn't queued — slotted or memorized.
+  const queueIndex = queueVerseIds(id).indexOf(verse.id)
+
   res.json({
     translation,
     verse: {
       id: verse.id,
       reference: verse.reference,
       order: verse.order,
-      text: row ? verse.text : null,
+      text: verse.text,
     },
+    themes: themesForVerse(verse.id).map((t) => ({ id: t.id, name: t.name })),
+    queuePosition: queueIndex === -1 ? null : queueIndex + 1,
     status: statusFor(row?.stage),
     graduatedAt: row?.graduated_at ?? null,
     userVerse: row ?? null,

@@ -44,6 +44,18 @@ CREATE TABLE IF NOT EXISTS user_verse (
   UNIQUE(user_id, verse_id)
 );
 
+-- A user's custom ordering of the practice queue. No row = the default order
+-- (in-progress verses first, then untouched ones, curriculum order within
+-- each). verse_order is a JSON array of verse ids; ids in it that are
+-- currently slotted or memorized are simply skipped when the queue is read,
+-- and eligible verses missing from it are merged back in — see
+-- services/queue.ts for the exact rules.
+CREATE TABLE IF NOT EXISTS user_queue (
+  user_id TEXT PRIMARY KEY REFERENCES users(id),
+  verse_order TEXT NOT NULL,     -- JSON array of verse ids
+  updated_at TEXT NOT NULL       -- ISO 8601
+);
+
 CREATE TABLE IF NOT EXISTS attempt (
   id TEXT PRIMARY KEY,
   user_verse_id TEXT NOT NULL REFERENCES user_verse(id),

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { db, type ExerciseType, type Stage, type UserVerseRow } from '../db/client';
 import { addDays, todayInTimezone } from '../lib/dates';
 import { refillSlots } from './slotRefill';
+import { bumpRelearningToFront } from './queue';
 
 // ---------------------------------------------------------------------------
 // Tuning constants. Change these here, not at the call sites.
@@ -218,6 +219,7 @@ export const recordAttempt = db.transaction(
           s.interval_days = null;
           s.due_at = null;
           refill = true;
+          bumpRelearningToFront(userVerse.user_id, userVerse.verse_id);
         } else {
           s.interval_days = 1;
           s.due_at = addDays(today, 1);

@@ -151,17 +151,35 @@ A user works on **at most 3 verses at a time**. All 3 slots are live from
 signup — a new user starts with the first three verses by `order` already
 slotted, so their first session has something to work on in each.
 
-When a verse graduates its slot empties and immediately refills, in this
-priority order:
+When a verse graduates its slot empties and immediately refills from the front
+of the **practice queue** — every verse the user hasn't memorized and isn't
+holding in a slot right now. Queue membership is derived, never stored: a verse
+is queued when it has no `user_verse` row yet, when it's flagged for
+relearning, or when it was swapped out of a slot mid-learning (progress
+saved). Only the *order* persists (`user_queue`, one JSON array per user), and
+only when the user customizes it.
 
-1. **A verse waiting to be relearned**, oldest-queued first — one that failed
-   review badly enough to be pulled back into learning. It re-enters at
-   `learning_heavy` specifically, never lower.
-2. Otherwise the next unassigned verse by `order`.
+The default order is the curriculum with in-progress verses first: relearners
+and swapped-out verses come before untouched ones (which preserves the old
+relearner-priority behavior), curriculum `order` within each group. A verse
+entering a slot from the queue starts at `learning_light` if untouched,
+resumes its saved tier if swapped out, or re-enters at `learning_heavy`
+specifically — never lower — if relearning.
 
-Once the bank is exhausted and nothing is queued, slots just stay empty — there
-is no wraparound. All of this lives in
-[`slotRefill.ts`](./src/services/slotRefill.ts).
+The user can reorder the queue verse by verse, move a whole **theme**
+([`themes.ts`](./src/data/themes.ts)) to the front, push one verse into the
+next-up spot, put a verse straight into a chosen slot (the occupant steps aside
+with progress saved), or reset to the default order — see the `/api/queue`
+routes.
+
+Only `/api/slots/replace` changes what's in a slot on demand. Reordering the
+queue — including moving a theme to the front — never disturbs the verses
+already in practice: slots refill one at a time from the new front of the queue
+as their occupants graduate or get swapped out.
+
+Once the queue is exhausted, slots just stay empty — there is no wraparound.
+All of this lives in [`slotRefill.ts`](./src/services/slotRefill.ts) and
+[`queue.ts`](./src/services/queue.ts).
 
 ### Stages
 
@@ -312,6 +330,12 @@ Domain rules belong in `services/`.
 | `GET`   | `/api/translations`     | Translations a user can pick between            |
 | `GET`   | `/api/me`               | Profile, streak, slot state                     |
 | `PATCH` | `/api/me`               | Update timezone and/or translation              |
+| `GET`   | `/api/queue`            | The practice queue, in order, plus themes       |
+| `PUT`   | `/api/queue`            | Store a custom queue order                      |
+| `DELETE`| `/api/queue`            | Reset the queue to the default order            |
+| `POST`  | `/api/queue/theme`      | Move a theme to the front of the queue          |
+| `POST`  | `/api/queue/next`       | Move one verse to the next-up spot              |
+| `POST`  | `/api/slots/replace`    | Put a verse into a chosen slot                  |
 
 `GET /api/verses`, `/api/verses/:id` and `/api/session/today` accept an optional
 `?translation=CODE` override and echo back the `translation` they served. `PATCH
@@ -319,8 +343,9 @@ Domain rules belong in `services/`.
 an unknown value for either is a `400`. `POST /auth/signup` accepts an optional
 `translation` alongside `timezone`.
 
-Browse statuses are `locked` / `active` / `review` / `mastered`, with
+Browse statuses are `not_started` / `active` / `review` / `mastered`, with
 `graduatedAt` alongside so the UI can badge graduation as an achievement.
+Every verse's text is served regardless of status — nothing is locked.
 
 `POST /api/session/complete` is idempotent per calendar day in the user's
 timezone — calling it twice won't double-count toward the streak.

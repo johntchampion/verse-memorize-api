@@ -6,6 +6,7 @@ import express, {
 import { requireAuth } from './middleware/auth'
 import { authRouter } from './routes/auth'
 import { meRouter } from './routes/me'
+import { queueRouter } from './routes/queue'
 import { sessionRouter } from './routes/session'
 import { translationsRouter } from './routes/translations'
 import { versesRouter } from './routes/verses'
@@ -21,6 +22,7 @@ export function createApp() {
   // JWT middleware guards every /api/* route.
   app.use('/api', requireAuth, sessionRouter)
   app.use('/api', requireAuth, versesRouter)
+  app.use('/api', requireAuth, queueRouter)
   app.use('/api', requireAuth, meRouter)
   app.use('/api', requireAuth, translationsRouter)
 
