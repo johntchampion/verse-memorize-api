@@ -10,6 +10,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc && cp src/db/schema.sql dist/db/schema.sql && mkdir -p dist/data/translations && cp src/data/translations/*.json dist/data/translations/",
     "start": "node dist/server.js",
+    "stats": "node dist/scripts/stats.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

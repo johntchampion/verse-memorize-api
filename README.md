@@ -45,6 +45,7 @@ curl -s localhost:3000/api/session/today -H "authorization: Bearer $TOKEN"
 | `npm run dev`       | Watch mode via `tsx`                      |
 | `npm run build`     | `tsc` → `dist/`, plus copies `schema.sql` |
 | `npm start`         | Run the built output                      |
+| `npm run stats`     | Usage report — see [Usage report](#usage-report) |
 | `npm run typecheck` | `tsc --noEmit`                            |
 
 | Env var      | Required                                      | Default         |
@@ -428,6 +429,19 @@ fall back to the default.
 Change the exported constants in `domain/progression.ts` (streak thresholds,
 interval ladder) or `STAGE_RULES` in `exerciseBuilder.ts` (blank densities). Both are
 single-source; nothing hardcodes these numbers elsewhere.
+
+### Usage report
+
+`src/scripts/stats.ts` prints account count plus a per-account table (created
+date, last exercise attempt, streak, verses started/practiced, attempts in
+the past 7 days), read directly off `DB_PATH` in readonly mode. Run it inside
+a running container:
+
+```bash
+docker exec -it <container> node dist/scripts/stats.js
+# or
+docker exec -it <container> npm run stats
+```
 
 ### Wiping the database
 

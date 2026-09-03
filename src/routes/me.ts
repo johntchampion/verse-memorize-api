@@ -16,7 +16,10 @@ import { MAX_SLOTS } from '../services/slotRefill'
 export const meRouter = Router()
 
 /** Local dates (YYYY-MM-DD) on which a session was completed. */
-function sessionDates(rows: SessionLogRow[], timezone: string): Set<string> {
+export function sessionDates(
+  rows: SessionLogRow[],
+  timezone: string,
+): Set<string> {
   return new Set(
     rows.map((r) => todayInTimezone(timezone, new Date(r.completed_at))),
   )
@@ -26,7 +29,7 @@ function sessionDates(rows: SessionLogRow[], timezone: string): Set<string> {
  * Consecutive days ending today (or yesterday, if today's session isn't done
  * yet) that have a session_log row, counted in the user's local dates.
  */
-function currentStreak(days: Set<string>, today: string): number {
+export function currentStreak(days: Set<string>, today: string): number {
   // An unfinished today shouldn't zero out a streak that's still alive.
   let cursor = days.has(today) ? today : addDays(today, -1)
 
