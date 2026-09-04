@@ -12,17 +12,27 @@ import path from 'node:path'
 import Database from 'better-sqlite3'
 import { currentStreak, sessionDates } from '../routes/me'
 import { todayInTimezone } from '../lib/dates'
+import { getVerse } from '../data/verses'
 import type { SessionLogRow } from '../db/rows'
+import type { Stage } from '../domain/stage'
 
 interface StatsRow {
   id: string
   email: string
   created_at: string
   timezone: string
+  translation: string
   verses_started: number
   verses_practiced: number
   last_attempt_at: string | null
   attempts_7d: number
+}
+
+interface SlottedVerseRow {
+  user_id: string
+  verse_id: string
+  stage: Stage
+  slot: number
 }
 
 const DB_PATH = process.env.DB_PATH ?? path.join(process.cwd(), 'data.sqlite')
@@ -35,7 +45,7 @@ const { total } = db.prepare('SELECT COUNT(*) AS total FROM users').get() as {
 const rows = db
   .prepare(
     `SELECT
-       u.id, u.email, u.created_at, u.timezone,
+       u.id, u.email, u.created_at, u.timezone, u.translation,
        (SELECT COUNT(*) FROM user_verse uv
           WHERE uv.user_id = u.id) AS verses_started,
        (SELECT COUNT(DISTINCT uv.id) FROM user_verse uv
@@ -67,6 +77,29 @@ function streakFor(userId: string, timezone: string): number {
   return currentStreak(days, todayInTimezone(timezone))
 }
 
+const slottedByUser = new Map<string, SlottedVerseRow[]>()
+for (const row of db
+  .prepare(
+    `SELECT user_id, verse_id, stage, slot FROM user_verse
+     WHERE slot IS NOT NULL ORDER BY user_id, slot`,
+  )
+  .all() as SlottedVerseRow[]) {
+  const list = slottedByUser.get(row.user_id)
+  if (list) list.push(row)
+  else slottedByUser.set(row.user_id, [row])
+}
+
+function slottedVersesFor(userId: string, translation: string): string {
+  const slotted = slottedByUser.get(userId)
+  if (!slotted || slotted.length === 0) return '—'
+  return slotted
+    .map((uv) => {
+      const reference = getVerse(uv.verse_id, translation)?.reference ?? uv.verse_id
+      return `${reference} (${uv.stage})`
+    })
+    .join(', ')
+}
+
 const fmtDate = (iso: string | null) => (iso ? iso.slice(0, 10) : '—')
 
 const columns = [
@@ -77,6 +110,7 @@ const columns = [
   { key: 'started', header: 'Started', align: 'right' },
   { key: 'practiced', header: 'Practiced', align: 'right' },
   { key: 'attempts7d', header: 'Attempts/7d', align: 'right' },
+  { key: 'slotted', header: 'Slotted Verses (Stage)', align: 'left' },
 ] as const
 
 const tableRows = rows.map((r) => ({
@@ -87,6 +121,7 @@ const tableRows = rows.map((r) => ({
   started: String(r.verses_started),
   practiced: String(r.verses_practiced),
   attempts7d: String(r.attempts_7d),
+  slotted: slottedVersesFor(r.id, r.translation),
 }))
 
 const widths = columns.map((c) =>
