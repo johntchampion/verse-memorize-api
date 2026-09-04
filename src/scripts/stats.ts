@@ -25,7 +25,9 @@ interface StatsRow {
   verses_started: number
   verses_practiced: number
   last_attempt_at: string | null
+  attempts_24h: number
   attempts_7d: number
+  attempts_30d: number
 }
 
 interface SlottedVerseRow {
@@ -57,7 +59,15 @@ const rows = db
        (SELECT COUNT(*) FROM attempt a
           JOIN user_verse uv ON uv.id = a.user_verse_id
           WHERE uv.user_id = u.id
-            AND a.created_at >= datetime('now', '-7 days')) AS attempts_7d
+            AND a.created_at >= datetime('now', '-1 day')) AS attempts_24h,
+       (SELECT COUNT(*) FROM attempt a
+          JOIN user_verse uv ON uv.id = a.user_verse_id
+          WHERE uv.user_id = u.id
+            AND a.created_at >= datetime('now', '-7 days')) AS attempts_7d,
+       (SELECT COUNT(*) FROM attempt a
+          JOIN user_verse uv ON uv.id = a.user_verse_id
+          WHERE uv.user_id = u.id
+            AND a.created_at >= datetime('now', '-30 days')) AS attempts_30d
      FROM users u
      ORDER BY last_attempt_at DESC NULLS LAST`,
   )
@@ -89,15 +99,13 @@ for (const row of db
   else slottedByUser.set(row.user_id, [row])
 }
 
-function slottedVersesFor(userId: string, translation: string): string {
+function slottedLinesFor(userId: string, translation: string): string[] {
   const slotted = slottedByUser.get(userId)
-  if (!slotted || slotted.length === 0) return '—'
-  return slotted
-    .map((uv) => {
-      const reference = getVerse(uv.verse_id, translation)?.reference ?? uv.verse_id
-      return `${reference} (${uv.stage})`
-    })
-    .join(', ')
+  if (!slotted || slotted.length === 0) return ['—']
+  return slotted.map((uv) => {
+    const reference = getVerse(uv.verse_id, translation)?.reference ?? uv.verse_id
+    return `${reference} (${uv.stage})`
+  })
 }
 
 const fmtDate = (iso: string | null) => (iso ? iso.slice(0, 10) : '—')
@@ -109,8 +117,9 @@ const columns = [
   { key: 'streak', header: 'Streak', align: 'right' },
   { key: 'started', header: 'Started', align: 'right' },
   { key: 'practiced', header: 'Practiced', align: 'right' },
+  { key: 'attempts24h', header: 'Attempts/24h', align: 'right' },
   { key: 'attempts7d', header: 'Attempts/7d', align: 'right' },
-  { key: 'slotted', header: 'Slotted Verses (Stage)', align: 'left' },
+  { key: 'attempts30d', header: 'Attempts/30d', align: 'right' },
 ] as const
 
 const tableRows = rows.map((r) => ({
@@ -120,12 +129,20 @@ const tableRows = rows.map((r) => ({
   streak: String(streakFor(r.id, r.timezone)),
   started: String(r.verses_started),
   practiced: String(r.verses_practiced),
+  attempts24h: String(r.attempts_24h),
   attempts7d: String(r.attempts_7d),
-  slotted: slottedVersesFor(r.id, r.translation),
+  attempts30d: String(r.attempts_30d),
+  slotted: slottedLinesFor(r.id, r.translation),
 }))
 
 const widths = columns.map((c) =>
   Math.max(c.header.length, ...tableRows.map((r) => r[c.key].length)),
+)
+
+const slottedHeader = 'Slotted Verses (Stage)'
+const slottedWidth = Math.max(
+  slottedHeader.length,
+  ...tableRows.flatMap((r) => r.slotted).map((s) => s.length),
 )
 
 function formatRow(values: readonly string[]): string {
@@ -139,10 +156,16 @@ function formatRow(values: readonly string[]): string {
 }
 
 console.log(`Total accounts: ${total}\n`)
-console.log(formatRow(columns.map((c) => c.header)))
-console.log(formatRow(widths.map((w) => '-'.repeat(w))))
+console.log(formatRow(columns.map((c) => c.header)) + '  ' + slottedHeader)
+console.log(
+  formatRow(widths.map((w) => '-'.repeat(w))) + '  ' + '-'.repeat(slottedWidth),
+)
 for (const r of tableRows) {
-  console.log(formatRow(columns.map((c) => r[c.key])))
+  const lineCount = Math.max(1, r.slotted.length)
+  for (let i = 0; i < lineCount; i++) {
+    const values = i === 0 ? columns.map((c) => r[c.key]) : columns.map(() => '')
+    console.log(formatRow(values) + '  ' + (r.slotted[i] ?? ''))
+  }
 }
 
 db.close()
