@@ -7,6 +7,8 @@ import Database from 'better-sqlite3'
 export type {
   AttemptRow,
   ExerciseType,
+  SessionEventRow,
+  SessionExerciseRow,
   SessionLogRow,
   UserRow,
   UserVerseRow,
@@ -92,6 +94,11 @@ export function migrate(): void {
   // Existing users were reading WEB before there was anything else to read, so
   // the default backfills them to exactly what they already had.
   addColumnIfMissing('users', 'translation', "TEXT NOT NULL DEFAULT 'WEB'")
+
+  // Nullable on purpose: an exercise answered before correctness was recorded
+  // has no honest value to backfill, and NULL reads as "answered, unknown"
+  // rather than as a miss.
+  addColumnIfMissing('session_exercise', 'correct', 'INTEGER')
 }
 
 /**

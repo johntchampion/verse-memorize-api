@@ -10,7 +10,8 @@
  *   - learning tiers advance on same-day answer streaks, capped at one tier
  *     change per verse per day, and graduate off the top;
  *   - review walks an interval ladder and, on repeated misses, drops out of
- *     scheduling entirely to wait for a learning slot;
+ *     scheduling entirely to wait for a learning slot, moving at most once per
+ *     due date;
  *   - mastered is the ceiling, and a single miss costs it.
  *
  * Side effects the caller must perform are reported in the Transition rather
@@ -72,6 +73,30 @@ function tierChangeSpentToday(progress: VerseProgress, today: string): boolean {
   return (
     progress.lastUpgradeDate === today || progress.lastDowngradeDate === today
   )
+}
+
+/**
+ * Whether the schedule is actually asking for this verse today.
+ *
+ * A null due date means unscheduled — a verse waiting for a learning slot —
+ * which is never due. Also the predicate that decides what goes into a day's
+ * session, so the schedule advances exactly when the verse was scheduled.
+ */
+export function isDue(
+  progress: Pick<VerseProgress, 'dueAt'>,
+  today: string,
+): boolean {
+  return progress.dueAt !== null && progress.dueAt <= today
+}
+
+/** The attempt happened, but nothing about the verse's schedule moves. */
+function unchanged(progress: VerseProgress): Transition {
+  return {
+    next: { ...progress },
+    graduated: false,
+    needsRefill: false,
+    bumpRelearning: false,
+  }
 }
 
 function advanceLearning(
@@ -148,6 +173,8 @@ function advanceMastered(
   correct: boolean,
   today: string,
 ): Transition {
+  if (!isDue(progress, today)) return unchanged(progress)
+
   const next = { ...progress }
 
   if (correct) {
@@ -176,6 +203,8 @@ function advanceReview(
   today: string,
   now: string,
 ): Transition {
+  if (!isDue(progress, today)) return unchanged(progress)
+
   const next = { ...progress }
   const interval = progress.intervalDays ?? 1
 
@@ -221,7 +250,19 @@ function advanceReview(
   return { next, graduated: false, needsRefill: true, bumpRelearning: true }
 }
 
-/** Dispatches to the regime the verse is currently in. */
+/**
+ * Dispatches to the regime the verse is currently in.
+ *
+ * The two scheduled regimes move once per due date, not once per exercise:
+ * every counted branch of advanceReview and advanceMastered pushes due_at past
+ * today (or unschedules the verse outright), so the isDue guard at the top of
+ * each turns every further answer that day into plain practice. Three drills of
+ * a one-day verse must not buy three days of interval, and a verse that
+ * graduated into review this morning must not collect review credit from the
+ * learning repetitions still queued behind it. Learning tiers are deliberately
+ * not gated this way — they are meant to be drilled several times a day, and
+ * they have their own one-change-per-day cap.
+ */
 export function advance(
   progress: VerseProgress,
   correct: boolean,

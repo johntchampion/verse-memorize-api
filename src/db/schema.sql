@@ -84,3 +84,62 @@ CREATE INDEX IF NOT EXISTS idx_user_verse_relearn
   ON user_verse(user_id, needs_relearning, relearning_queued_at);
 CREATE INDEX IF NOT EXISTS idx_attempt_uv ON attempt(user_verse_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_session_log_user ON session_log(user_id, completed_at);
+
+-- Today's exercise queue, materialized so a session survives the app being
+-- closed mid-way. Only identity and order are stored: the blanks and word bank
+-- are regenerated on every read, at the verse's *current* stage, so a verse
+-- that upgrades mid-session still gets harder repetitions. Rows are appended,
+-- never renumbered or removed within a day, which is what keeps the order
+-- stable across calls and stops an answered review from vanishing from the list.
+CREATE TABLE IF NOT EXISTS session_exercise (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  session_date TEXT NOT NULL,    -- local date (YYYY-MM-DD) in the user's timezone
+  position INTEGER NOT NULL,     -- 0-based; fixed once assigned
+  user_verse_id TEXT NOT NULL REFERENCES user_verse(id),
+  queue TEXT NOT NULL,           -- 'review' | 'learning'
+  instance INTEGER NOT NULL,     -- repetition index within the day; feeds the
+                                 -- exercise seed alongside verse and stage
+  completed_at TEXT,             -- ISO 8601; NULL = not answered yet
+  correct INTEGER,               -- 0 or 1 once answered; NULL while outstanding.
+                                 -- Added after the table shipped, so rows
+                                 -- answered before then stay NULL and simply
+                                 -- don't count toward the day's correct total.
+  UNIQUE(user_id, session_date, position),
+  -- queue is part of the identity on purpose: a review verse that fails twice
+  -- is re-seated into a learning slot the same day, and its learning/instance-0
+  -- item must not collide with the review/instance-0 item already planned.
+  UNIQUE(user_id, session_date, user_verse_id, queue, instance)
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_exercise_day
+  ON session_exercise(user_id, session_date, position);
+
+-- What moved today, so the completion screen can recap a session the user quit
+-- and came back to. The client used to derive these from attempt responses and
+-- hold them in memory, which lost everything earned before a reload; deriving
+-- them here also means the stage a verse moved *from* is the real one rather
+-- than whatever the client last fetched.
+--
+-- Only two paths write rows: recording an attempt, and the refill at the end of
+-- POST /api/session/complete. Refills at signup and from an explicit slot swap
+-- deliberately record nothing -- there is no recap being shown for those.
+--
+-- Day-scoped like session_exercise, and pruned alongside it.
+CREATE TABLE IF NOT EXISTS session_event (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  session_date TEXT NOT NULL,    -- local date (YYYY-MM-DD) in the user's timezone
+  created_at TEXT NOT NULL,      -- ISO 8601
+  kind TEXT NOT NULL,            -- see domain/sessionEvent.ts for the vocabulary
+  user_verse_id TEXT NOT NULL REFERENCES user_verse(id),
+  verse_id TEXT NOT NULL,        -- slug; the human reference is rendered from
+                                 -- the bank at read time, in the reader's
+                                 -- current translation
+  stage_from TEXT,               -- NULL for slot events
+  stage_to TEXT,                 -- NULL for slot events
+  slot INTEGER                   -- the slot taken, for slot events
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_event_day
+  ON session_event(user_id, session_date, created_at);

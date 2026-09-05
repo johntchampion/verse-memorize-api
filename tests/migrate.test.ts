@@ -15,6 +15,8 @@ function emptyDatabase(): void {
   for (const table of [
     'review_schedule',
     'attempt',
+    'session_event',
+    'session_exercise',
     'user_queue',
     'session_log',
     'user_verse',
@@ -90,6 +92,29 @@ describe('migrate', () => {
     migrate()
 
     expect(columnNames('users')).toContain('translation')
+  })
+
+  it('creates session_event on a database that predates it', () => {
+    migrate()
+    db.exec('DROP TABLE session_event')
+
+    migrate()
+
+    expect(columnNames('session_event')).toEqual(
+      expect.arrayContaining(['kind', 'session_date', 'stage_from', 'slot']),
+    )
+  })
+
+  it('adds session_exercise.correct to a database that predates it', () => {
+    migrate()
+    db.exec('ALTER TABLE session_exercise DROP COLUMN correct')
+    expect(columnNames('session_exercise')).not.toContain('correct')
+
+    // CREATE TABLE IF NOT EXISTS cannot reshape a table that already exists,
+    // which is the whole reason the column needs its own step.
+    migrate()
+
+    expect(columnNames('session_exercise')).toContain('correct')
   })
 })
 

@@ -14,6 +14,8 @@ export function initDb(): void {
 export function resetDb(): void {
   db.exec(
     `DELETE FROM attempt;
+     DELETE FROM session_event;
+     DELETE FROM session_exercise;
      DELETE FROM session_log;
      DELETE FROM user_queue;
      DELETE FROM user_verse;

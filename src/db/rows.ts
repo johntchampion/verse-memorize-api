@@ -7,6 +7,8 @@
  * a row type appearing outside src/db/ is a sign something skipped that
  * boundary.
  */
+import type { SessionEventKind } from '../domain/sessionEvent'
+import type { SessionQueue } from '../domain/sessionExercise'
 import type { Stage } from '../domain/stage'
 
 export type ExerciseType = 'tile_fill_blank' | 'type_fill_blank'
@@ -53,4 +55,36 @@ export interface SessionLogRow {
   id: string
   user_id: string
   completed_at: string
+}
+
+export interface SessionExerciseRow {
+  id: string
+  user_id: string
+  /** Local date (YYYY-MM-DD) in the user's timezone. */
+  session_date: string
+  position: number
+  user_verse_id: string
+  queue: SessionQueue
+  instance: number
+  /** ISO 8601, or NULL while the exercise is still outstanding. */
+  completed_at: string | null
+  /** 0 or 1 once answered; NULL while outstanding, or if it was answered
+      before this column existed. */
+  correct: number | null
+}
+
+export interface SessionEventRow {
+  id: string
+  user_id: string
+  /** Local date (YYYY-MM-DD) in the user's timezone. */
+  session_date: string
+  created_at: string
+  kind: SessionEventKind
+  user_verse_id: string
+  verse_id: string
+  /** NULL for slot events, which are not a move along the ladder. */
+  stage_from: Stage | null
+  stage_to: Stage | null
+  /** The slot taken, for slot events; NULL otherwise. */
+  slot: number | null
 }

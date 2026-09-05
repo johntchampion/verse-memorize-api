@@ -228,14 +228,23 @@ verses were stranded forever.)
 
 Entered at `interval_days = 1`, climbing the ladder **1 → 3 → 7 → 14 → 30**.
 
-- **3 correct in a row** advances one rung and resets the counter. This run is
-  _not_ day-constrained — reviews are spaced days apart by definition.
+- **The schedule moves once per due date, not once per exercise.** An answer
+  only counts while `due_at <= today`, and every counted answer pushes `due_at`
+  past today — so the second and third repetitions of a verse on the same day
+  are recorded as attempts and change nothing else. Three drills of a one-day
+  verse in one afternoon must not buy three days of interval, and a verse that
+  graduated into review this morning must not collect review credit from the
+  learning repetitions still queued behind it. Practising a verse before it
+  comes due is inert for the same reason. Learning tiers are deliberately _not_
+  gated this way: they are meant to be drilled several times a day.
+- **3 correct due dates in a row** advances one rung and resets the counter.
 - **A wrong answer** resets the interval to 1 and the correct-run to 0, and
-  increments a separate wrong-run. **2 wrong in a row** pulls the verse out of
-  review entirely and queues it for the next available slot, where it re-enters
-  at `learning_heavy`. While queued it has no `due_at`, so it drops out of the
-  session until a slot picks it up. No count of how often a verse has been
-  requeued is kept.
+  increments a separate wrong-run. **2 missed due dates in a row** pulls the
+  verse out of review entirely and queues it for the next available slot, where
+  it re-enters at `learning_heavy`. While queued it has no `due_at`, so it drops
+  out of the session — and, being unscheduled, is inert to further answers —
+  until a slot picks it up. No count of how often a verse has been requeued is
+  kept.
 
 #### Mastered
 
@@ -244,8 +253,8 @@ while already at 30 days. It stays on the 30-day cadence so it doesn't go stale,
 and correct answers change nothing further; mastered is the ceiling.
 
 A single miss reverts it to `review` at interval 1, **and counts as the first of
-review's two strikes** — one more miss right after queues it for a slot without
-waiting for two fresh misses.
+review's two strikes** — one miss on the next due date queues it for a slot
+without waiting for two fresh misses. Same-day repeats are inert here too.
 
 ### Tuning constants
 
@@ -258,8 +267,8 @@ call site.
 | `TIER_ADVANCE_THRESHOLD`    | 3               | Same-day correct run that advances a slotted tier |
 | `TIER_DOWNGRADE_THRESHOLD`  | 2               | Wrong run that drops a slotted tier               |
 | `INTERVAL_PROGRESSION`      | 1, 3, 7, 14, 30 | Review interval ladder, in days                   |
-| `REVIEW_ADVANCE_THRESHOLD`  | 3               | Correct reviews that step one rung up             |
-| `REVIEW_DEMOTION_THRESHOLD` | 2               | Failed reviews that queue a verse for relearning  |
+| `REVIEW_ADVANCE_THRESHOLD`  | 3               | Correct due dates that step one rung up           |
+| `REVIEW_DEMOTION_THRESHOLD` | 2               | Missed due dates that queue a verse for relearning |
 
 ### Exercise generation
 
@@ -282,9 +291,56 @@ Blank selection is **deterministic**, seeded on `verseId:stage:instance`. The
 `instance` counter is why the 3 repetitions of a verse within one session blank
 different words while any single one stays reproducible.
 
-[`sessionBuilder.ts`](./src/services/sessionBuilder.ts) assembles the day: due
-reviews (one exercise each) plus learning verses (3 each), interleaved
+[`sessionPlan.ts`](./src/services/sessionPlan.ts) decides what the day holds:
+due reviews (one exercise each) plus learning verses (3 each), interleaved
 round-robin **by verse** so a user never grinds the same verse back to back.
+
+That plan is **persisted**, one `session_exercise` row per exercise, so a
+session survives the app being closed part-way through. Within a day it is
+append-only:
+
+- Positions are assigned once and never renumbered, so the queue comes back in
+  the same order on every call.
+- Nothing is removed. An answered review whose `due_at` has moved on, or a verse
+  that graduated mid-session, stays in the list marked `completed` instead of
+  vanishing out from under the client.
+- A slot refilled mid-session appends its three exercises to the tail, which is
+  the same-day behaviour it has always had.
+
+Only identity and order are stored. [`sessionBuilder.ts`](./src/services/sessionBuilder.ts)
+regenerates the text, blanks and word bank on every read, at the verse's
+**current** stage — so a verse that upgrades a tier partway through the session
+gets harder repetitions for the rest of it.
+
+`POST /api/attempt` marks the earliest outstanding exercise for that verse as
+done and records how it was answered; there is no separate "completed" call.
+Once a verse has nothing left outstanding today, further attempts on it are
+simply extra practice and tick nothing off.
+
+### What moved: session events
+
+The completion screen recaps the session — verses that climbed a tier,
+graduated, slipped, or moved into a freed slot. Those are recorded server-side,
+one `session_event` row per move, because the client used to derive them by
+comparing the stage it had cached against the one an attempt came back with, and
+that got two things wrong. It could only remember the current sitting, so a
+session resumed after a quit lost everything earned before it; and the cached
+stage went stale the moment a verse upgraded, so the two remaining repetitions
+of that verse re-reported a move that had already happened.
+
+[`domain/sessionEvent.ts`](./src/domain/sessionEvent.ts) classifies a move
+against the row as it actually stands, after the refill has run — which is what
+lets a review verse demoted straight back into a free slot be reported once, as
+a demotion, rather than as a park plus a slot fill.
+
+Only two paths write events: recording an attempt, and the refill at the end of
+`POST /api/session/complete`. The refills at signup and behind an explicit slot
+swap deliberately record nothing — there is no recap being shown for those.
+
+Events are day-scoped like the plan, and pruned alongside it. The stored row
+keeps the verse slug; the human reference is rendered at read time from the bank
+the reader is currently on, which is also what lets a slot event name the verse
+that arrived rather than only the slot it landed in.
 
 ---
 
@@ -298,9 +354,13 @@ src/
   db/client.ts              Connection and migrate()
   db/rows.ts                Raw row shapes, one per table
   db/userVerseRepository.ts Every user_verse query; returns domain models
+  db/sessionExerciseRepository.ts  Every session_exercise query
+  db/sessionEventRepository.ts     Every session_event query
   domain/
     stage.ts                The Stage union and the ladder between stages
     userVerse.ts            UserVerse model, row mapping, wire-format shim
+    sessionExercise.ts      PlannedExercise model and row mapping
+    sessionEvent.ts         Pure "what did this attempt move" classifier
     progression.ts          Pure attempt -> next-state rules + constants
   lib/dates.ts              Timezone-aware day boundaries
   lib/errors.ts             ApiError and friends; status codes for services
@@ -314,7 +374,8 @@ src/
     stageMachine.ts         Applies a progression transition + side effects
     slotRefill.ts           Slot fill and relearning priority
     queue.ts                Practice queue membership and ordering
-    sessionBuilder.ts       Builds today's queue
+    sessionPlan.ts          What today's queue holds; persists and resumes it
+    sessionBuilder.ts       Renders the plan into exercises
     exerciseBuilder.ts      Blanking and word banks
   app.ts / server.ts        Wiring and boot
 ```
@@ -345,7 +406,7 @@ camelCase `UserVerse` model.
 | ------- | ----------------------- | ----------------------------------------------- |
 | `POST`  | `/auth/signup`          | Create user, assign slot 1, return JWT          |
 | `POST`  | `/auth/login`           | Return JWT                                      |
-| `GET`   | `/api/session/today`    | Today's ordered exercise queue                  |
+| `GET`   | `/api/session/today`    | Today's resumable exercise queue, or a practice drill |
 | `POST`  | `/api/attempt`          | Record one attempt; returns updated verse state |
 | `POST`  | `/api/session/complete` | Log the session, top up any empty slots         |
 | `GET`   | `/api/verses`           | Full bank with per-user status                  |
@@ -359,6 +420,30 @@ camelCase `UserVerse` model.
 | `POST`  | `/api/queue/theme`      | Move a theme to the front of the queue          |
 | `POST`  | `/api/queue/next`       | Move one verse to the next-up spot              |
 | `POST`  | `/api/slots/replace`    | Put a verse into a chosen slot                  |
+
+`GET /api/session/today` returns the day's queue in a fixed order, each exercise
+carrying `completed`, `correct` and the verse's `userVerse` progress (the same
+snake_case shape `POST /api/attempt` returns), plus `count`, `completedCount`
+and `correctCount` on the body. A client that quit mid-session re-fetches and
+skips to the first `completed: false`.
+
+It also returns `events`: everything the day has moved so far, so a resumed
+session can recap the whole day rather than only the part of it the client was
+open for. The two mutating endpoints return **deltas** instead — `POST
+/api/attempt` returns just what that attempt moved, and `POST
+/api/session/complete` just the slots that call topped up — so a client stepping
+through a session appends as it goes and picks up the rest on resume. Each event
+carries `kind`, `reference`, `verseId`, `stageFrom`, `stageTo`, `slot` and
+`createdAt`; the kinds are listed in [`domain/sessionEvent.ts`](./src/domain/sessionEvent.ts).
+
+`GET /api/session/today?practice=true` (or `=1`) instead returns a short drill —
+one exercise per slotted verse, in slot order, always `completed: false`. It is
+meant to be called repeatedly through the day: it neither reads nor writes the
+day's plan, and its blanks are re-randomised on every call rather than seeded.
+The response shape is otherwise identical, with `practice` saying which of the
+two you got. A drill's `events` and `correctCount` are always empty: its recap
+is its own, and the day's events are not its to report. Its attempts are still
+recorded, so a later resume of the day's session includes what the drill moved.
 
 `GET /api/verses`, `/api/verses/:id` and `/api/session/today` accept an optional
 `?translation=CODE` override and echo back the `translation` they served. `PATCH
@@ -464,7 +549,10 @@ will be empty:
 ```bash
 sqlite3 data.sqlite "
 DELETE FROM attempt;
+DELETE FROM session_event;
+DELETE FROM session_exercise;
 DELETE FROM session_log;
+DELETE FROM user_queue;
 DELETE FROM user_verse;
 DELETE FROM users;
 "
@@ -514,10 +602,22 @@ and `tsc` will point at every switch and lookup table that needs the new case.
 - **An exercise's blanks follow the text, not the translation code.** The PRNG
   seed is `verseId:stage:instance`, deliberately translation-free, so switching
   mid-session doesn't reshuffle a verse the user is partway through; the blanks
-  differ anyway because they're chosen from the resolved wording.
+  differ anyway because they're chosen from the resolved wording. Practice mode
+  is the one exception: it passes a random `instance` so two drills in a row
+  don't blank the same words.
+- **Where an exercise is in the day's queue is stored; what it looks like is
+  not.** `session_exercise` pins identity and order only. That's why a verse can
+  change stage mid-session without disturbing the queue, and why the blanks a
+  user saw before quitting aren't the blanks they come back to.
 - **Timezone drives every day boundary** — due dates, streaks, and session
   idempotency all go through `lib/dates.ts` using `users.timezone`. Don't compare
   raw timestamps for "same day".
+- **A review's schedule advances on due dates, not on exercises.** `isDue()` in
+  `progression.ts` gates both `advanceReview` and `advanceMastered`, and it's
+  the same predicate `sessionPlan.ts` uses to decide what belongs in a day — so
+  the schedule advances exactly when the verse was scheduled. Extra repetitions
+  are still recorded in `attempt` and still tick the day's session off; they
+  just don't move `interval_days`, `due_at` or either streak counter.
 - **Missed reviews aren't swept.** An overdue verse stays in the queue and only
   changes state when the user actually attempts it. Nothing penalises absence.
 - **A verse queued for relearning can wait indefinitely.** It only re-enters
