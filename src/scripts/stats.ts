@@ -110,21 +110,27 @@ function slottedLinesFor(userId: string, translation: string): string[] {
 
 const fmtDate = (iso: string | null) => (iso ? iso.slice(0, 10) : '—')
 
-const columns = [
-  { key: 'email', header: 'Email', align: 'left' },
-  { key: 'created', header: 'Created', align: 'left' },
-  { key: 'lastAttempt', header: 'Last Attempt', align: 'left' },
-  { key: 'streak', header: 'Streak', align: 'right' },
-  { key: 'started', header: 'Started', align: 'right' },
-  { key: 'practiced', header: 'Practiced', align: 'right' },
-  { key: 'attempts24h', header: 'Attempts/24h', align: 'right' },
-  { key: 'attempts7d', header: 'Attempts/7d', align: 'right' },
-  { key: 'attempts30d', header: 'Attempts/30d', align: 'right' },
+const fields = [
+  { key: 'email', label: 'Email' },
+  { key: 'created', label: 'Created' },
+  { key: 'timezone', label: 'Timezone' },
+  { key: 'translation', label: 'Translation' },
+  { key: 'lastAttempt', label: 'Last Attempt' },
+  { key: 'streak', label: 'Streak' },
+  { key: 'started', label: 'Started' },
+  { key: 'practiced', label: 'Practiced' },
+  { key: 'attempts24h', label: 'Attempts/24h' },
+  { key: 'attempts7d', label: 'Attempts/7d' },
+  { key: 'attempts30d', label: 'Attempts/30d' },
 ] as const
+
+const slottedLabel = 'Slotted Verses'
 
 const tableRows = rows.map((r) => ({
   email: r.email,
   created: fmtDate(r.created_at),
+  timezone: r.timezone,
+  translation: r.translation,
   lastAttempt: fmtDate(r.last_attempt_at),
   streak: String(streakFor(r.id, r.timezone)),
   started: String(r.verses_started),
@@ -135,37 +141,23 @@ const tableRows = rows.map((r) => ({
   slotted: slottedLinesFor(r.id, r.translation),
 }))
 
-const widths = columns.map((c) =>
-  Math.max(c.header.length, ...tableRows.map((r) => r[c.key].length)),
+const labelWidth = Math.max(
+  slottedLabel.length,
+  ...fields.map((f) => f.label.length),
 )
-
-const slottedHeader = 'Slotted Verses (Stage)'
-const slottedWidth = Math.max(
-  slottedHeader.length,
-  ...tableRows.flatMap((r) => r.slotted).map((s) => s.length),
-)
-
-function formatRow(values: readonly string[]): string {
-  return columns
-    .map((c, i) =>
-      c.align === 'right'
-        ? values[i].padStart(widths[i])
-        : values[i].padEnd(widths[i]),
-    )
-    .join('  ')
-}
 
 console.log(`Total accounts: ${total}\n`)
-console.log(formatRow(columns.map((c) => c.header)) + '  ' + slottedHeader)
-console.log(
-  formatRow(widths.map((w) => '-'.repeat(w))) + '  ' + '-'.repeat(slottedWidth),
-)
-for (const r of tableRows) {
-  const lineCount = Math.max(1, r.slotted.length)
-  for (let i = 0; i < lineCount; i++) {
-    const values = i === 0 ? columns.map((c) => r[c.key]) : columns.map(() => '')
-    console.log(formatRow(values) + '  ' + (r.slotted[i] ?? ''))
+
+tableRows.forEach((r, index) => {
+  const header = `-[ RECORD ${index + 1} ]`
+  console.log(header + '-'.repeat(Math.max(0, labelWidth + 3 - header.length)))
+  for (const f of fields) {
+    console.log(`${f.label.padEnd(labelWidth)} | ${r[f.key]}`)
   }
-}
+  r.slotted.forEach((line, i) => {
+    const label = i === 0 ? slottedLabel : ''
+    console.log(`${label.padEnd(labelWidth)} | ${line}`)
+  })
+})
 
 db.close()
