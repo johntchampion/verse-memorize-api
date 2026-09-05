@@ -587,6 +587,16 @@ before the port opens. There is no upgrade path — the old 0-100 strength score
 cannot be converted into the streak counters and interval ladder that replaced
 it — so move the file aside and let a fresh one be created.
 
+A schema change that isn't additive but *is* losslessly convertible — like
+adding `ON DELETE CASCADE` to a foreign key — doesn't need that reject-and-recreate
+treatment. Instead it rebuilds the affected table(s) in place: create a shadow
+table with the new constraint, copy the rows across, drop the old table, rename
+the shadow into place, and reapply any indexes (`DROP TABLE` removes those too).
+`migrateAddCascadeDeletes()` in `client.ts` is the worked example — it's guarded
+by a `PRAGMA foreign_key_list` check so it only runs once per database, and
+every foreign key in `schema.sql` now cascades: deleting a `users` row or a
+`user_verse` row removes its dependent rows automatically.
+
 Adding a stage is deliberately compile-checked: widen `Stage` in `domain/stage.ts`
 and `tsc` will point at every switch and lookup table that needs the new case.
 

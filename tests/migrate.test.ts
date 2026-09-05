@@ -59,6 +59,49 @@ function columnNames(table: string): string[] {
   ).map((c) => c.name)
 }
 
+function foreignKeyOnDeletes(table: string): string[] {
+  return (
+    db.prepare(`PRAGMA foreign_key_list(${table})`).all() as {
+      on_delete: string
+    }[]
+  ).map((fk) => fk.on_delete)
+}
+
+/** The pre-cascade shape of user_verse: today's columns, no ON DELETE CASCADE. */
+function createPreCascadeUserVerse(): void {
+  db.exec(`
+    CREATE TABLE user_verse (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      verse_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      consecutive_correct INTEGER NOT NULL DEFAULT 0,
+      consecutive_incorrect INTEGER NOT NULL DEFAULT 0,
+      streak_date TEXT,
+      interval_days INTEGER,
+      due_at TEXT,
+      last_upgrade_date TEXT,
+      last_downgrade_date TEXT,
+      needs_relearning INTEGER NOT NULL DEFAULT 0,
+      relearning_queued_at TEXT,
+      slot INTEGER,
+      activated_at TEXT NOT NULL,
+      graduated_at TEXT,
+      UNIQUE(user_id, verse_id)
+    )`)
+}
+
+function createPreCascadeUsers(): void {
+  db.exec(`
+    CREATE TABLE users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      timezone TEXT NOT NULL DEFAULT 'UTC'
+    )`)
+}
+
 beforeEach(() => {
   emptyDatabase()
 })
@@ -77,6 +120,23 @@ describe('migrate', () => {
       ]),
     )
     expect(columnNames('users')).toContain('translation')
+  })
+
+  it('creates every foreign key with ON DELETE CASCADE', () => {
+    migrate()
+
+    for (const table of [
+      'user_verse',
+      'user_queue',
+      'attempt',
+      'session_log',
+      'session_exercise',
+      'session_event',
+    ]) {
+      const onDeletes = foreignKeyOnDeletes(table)
+      expect(onDeletes.length).toBeGreaterThan(0)
+      expect(onDeletes.every((action) => action === 'CASCADE')).toBe(true)
+    }
   })
 
   it('is safe to run on every boot', () => {
@@ -168,5 +228,40 @@ describe('the pre-rewrite guard', () => {
     migrate()
 
     expect(() => migrate()).not.toThrow()
+  })
+})
+
+describe('the cascade-delete migration', () => {
+  it('rebuilds an existing table to add ON DELETE CASCADE without losing rows', () => {
+    createPreCascadeUsers()
+    createPreCascadeUserVerse()
+    db.prepare(
+      `INSERT INTO users (id, email, password_hash, created_at) VALUES ('u1', 'a@b.com', 'h', '2024-01-01')`,
+    ).run()
+    db.prepare(
+      `INSERT INTO user_verse (id, user_id, verse_id, stage, activated_at)
+       VALUES ('uv1', 'u1', 'john-3-16', 'learning_light', '2024-01-01')`,
+    ).run()
+    expect(foreignKeyOnDeletes('user_verse')).toEqual(['NO ACTION'])
+
+    migrate()
+
+    expect(foreignKeyOnDeletes('user_verse')).toEqual(['CASCADE'])
+    expect(
+      db.prepare('SELECT * FROM user_verse WHERE id = ?').get('uv1'),
+    ).toMatchObject({
+      id: 'uv1',
+      user_id: 'u1',
+      verse_id: 'john-3-16',
+    })
+  })
+
+  it('is idempotent once a table already cascades', () => {
+    migrate()
+
+    expect(() => migrate()).not.toThrow()
+    expect(
+      foreignKeyOnDeletes('user_verse').every((action) => action === 'CASCADE'),
+    ).toBe(true)
   })
 })

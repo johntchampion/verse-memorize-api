@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- is no separate schedule table.
 CREATE TABLE IF NOT EXISTS user_verse (
   id TEXT PRIMARY KEY,           -- uuid
-  user_id TEXT NOT NULL REFERENCES users(id),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   verse_id TEXT NOT NULL,        -- references data/verses.ts id, not a DB fk;
                                  -- the same slug in every translation
   stage TEXT NOT NULL,           -- 'learning_light' | 'learning_medium' |
@@ -51,14 +51,14 @@ CREATE TABLE IF NOT EXISTS user_verse (
 -- and eligible verses missing from it are merged back in — see
 -- services/queue.ts for the exact rules.
 CREATE TABLE IF NOT EXISTS user_queue (
-  user_id TEXT PRIMARY KEY REFERENCES users(id),
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   verse_order TEXT NOT NULL,     -- JSON array of verse ids
   updated_at TEXT NOT NULL       -- ISO 8601
 );
 
 CREATE TABLE IF NOT EXISTS attempt (
   id TEXT PRIMARY KEY,
-  user_verse_id TEXT NOT NULL REFERENCES user_verse(id),
+  user_verse_id TEXT NOT NULL REFERENCES user_verse(id) ON DELETE CASCADE,
   exercise_type TEXT NOT NULL,   -- 'tile_fill_blank' | 'type_fill_blank'
   correct INTEGER NOT NULL,      -- 0 or 1
   created_at TEXT NOT NULL
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS attempt (
 
 CREATE TABLE IF NOT EXISTS session_log (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   completed_at TEXT NOT NULL     -- one row per completed daily session;
                                  -- drives the streak on GET /api/me
 );
@@ -93,10 +93,10 @@ CREATE INDEX IF NOT EXISTS idx_session_log_user ON session_log(user_id, complete
 -- stable across calls and stops an answered review from vanishing from the list.
 CREATE TABLE IF NOT EXISTS session_exercise (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   session_date TEXT NOT NULL,    -- local date (YYYY-MM-DD) in the user's timezone
   position INTEGER NOT NULL,     -- 0-based; fixed once assigned
-  user_verse_id TEXT NOT NULL REFERENCES user_verse(id),
+  user_verse_id TEXT NOT NULL REFERENCES user_verse(id) ON DELETE CASCADE,
   queue TEXT NOT NULL,           -- 'review' | 'learning'
   instance INTEGER NOT NULL,     -- repetition index within the day; feeds the
                                  -- exercise seed alongside verse and stage
@@ -128,11 +128,11 @@ CREATE INDEX IF NOT EXISTS idx_session_exercise_day
 -- Day-scoped like session_exercise, and pruned alongside it.
 CREATE TABLE IF NOT EXISTS session_event (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   session_date TEXT NOT NULL,    -- local date (YYYY-MM-DD) in the user's timezone
   created_at TEXT NOT NULL,      -- ISO 8601
   kind TEXT NOT NULL,            -- see domain/sessionEvent.ts for the vocabulary
-  user_verse_id TEXT NOT NULL REFERENCES user_verse(id),
+  user_verse_id TEXT NOT NULL REFERENCES user_verse(id) ON DELETE CASCADE,
   verse_id TEXT NOT NULL,        -- slug; the human reference is rendered from
                                  -- the bank at read time, in the reader's
                                  -- current translation
