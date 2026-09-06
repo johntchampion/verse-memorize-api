@@ -1,16 +1,18 @@
 import type { SessionExerciseRow } from '../db/rows'
+import type { Stage } from './stage'
 
 /** Which queue a planned exercise was drawn from, so the client can label it. */
 export type SessionQueue = 'review' | 'learning'
 
 /**
- * One slot in a day's session: what to practice and where in the order, plus
- * whether it has been answered yet.
+ * One slot in a day's session: what to practice, at what difficulty, where in
+ * the order, and whether it has been answered yet.
  *
- * Deliberately holds no verse text, stage or blanks. The exercise itself is
- * regenerated on every read from the verse's current state, so a verse that
- * upgrades a tier mid-session gets harder repetitions and a translation switch
- * is picked up immediately — only the identity and the order are pinned.
+ * Deliberately holds no verse text or blanks — those are regenerated on every
+ * read, so a translation switch is picked up immediately. What is pinned is
+ * everything that decides the exercise: identity, order, and the stage, so a
+ * verse that graduates or changes tier mid-session doesn't rewrite the
+ * repetitions still queued behind it.
  */
 export interface PlannedExercise {
   id: string
@@ -20,6 +22,12 @@ export interface PlannedExercise {
   instance: number
   /** 0-based, fixed once assigned. */
   position: number
+  /**
+   * The verse's stage when the day was planned — the difficulty this exercise
+   * holds for the rest of the day. Null only for rows planned before the stage
+   * was pinned; those fall back to the verse's live stage.
+   */
+  stage: Stage | null
   completed: boolean
   /**
    * How it was answered, or null while outstanding. Also null for anything
@@ -36,6 +44,7 @@ export function toPlannedExercise(row: SessionExerciseRow): PlannedExercise {
     queue: row.queue,
     instance: row.instance,
     position: row.position,
+    stage: row.stage,
     completed: row.completed_at !== null,
     correct: row.correct === null ? null : row.correct === 1,
   }

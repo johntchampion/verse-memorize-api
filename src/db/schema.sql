@@ -86,11 +86,12 @@ CREATE INDEX IF NOT EXISTS idx_attempt_uv ON attempt(user_verse_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_session_log_user ON session_log(user_id, completed_at);
 
 -- Today's exercise queue, materialized so a session survives the app being
--- closed mid-way. Only identity and order are stored: the blanks and word bank
--- are regenerated on every read, at the verse's *current* stage, so a verse
--- that upgrades mid-session still gets harder repetitions. Rows are appended,
--- never renumbered or removed within a day, which is what keeps the order
--- stable across calls and stops an answered review from vanishing from the list.
+-- closed mid-way. A day's rows are written in one go the first time the day is
+-- touched and never added to, renumbered or removed after that: the day's work
+-- is settled at the start of the day, so an answered review doesn't vanish from
+-- the list and a slot refilled mid-session doesn't lengthen it. The blanks and
+-- word bank are still regenerated on every read rather than stored, but from
+-- the stage pinned here, so a rebuilt exercise is the one that was planned.
 CREATE TABLE IF NOT EXISTS session_exercise (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -100,6 +101,12 @@ CREATE TABLE IF NOT EXISTS session_exercise (
   queue TEXT NOT NULL,           -- 'review' | 'learning'
   instance INTEGER NOT NULL,     -- repetition index within the day; feeds the
                                  -- exercise seed alongside verse and stage
+  stage TEXT,                    -- the verse's stage when the day was planned,
+                                 -- which is the difficulty this exercise keeps
+                                 -- for the day however the verse moves. Added
+                                 -- after the table shipped, so rows planned
+                                 -- before then are NULL and fall back to the
+                                 -- verse's live stage.
   completed_at TEXT,             -- ISO 8601; NULL = not answered yet
   correct INTEGER,               -- 0 or 1 once answered; NULL while outstanding.
                                  -- Added after the table shipped, so rows

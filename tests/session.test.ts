@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authed, initDb, resetDb, signup } from './helpers'
+import { db } from '../src/db/client'
 
 beforeAll(() => {
   initDb()
@@ -344,7 +345,7 @@ describe('GET /api/session/today (resuming a session)', () => {
     expect(stillThere[0].completed).toBe(true)
   })
 
-  it('appends a mid-session slot refill to the end of the queue', async () => {
+  it('keeps a mid-session slot refill out of today’s queue', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     let day = new Date('2026-01-01T00:00:00Z')
     vi.setSystemTime(day)
@@ -362,25 +363,186 @@ describe('GET /api/session/today (resuming a session)', () => {
     }
 
     const before = await authed(token).get('/api/session/today')
-    const knownVerses = new Set(
-      before.body.exercises.map((e: WireExercise) => e.verseId),
-    )
 
     let graduating
     for (let i = 0; i < 3; i += 1)
       graduating = await attempt(token, userVerseId)
     expect(graduating!.body.graduated).toBe(true)
+    // The slot really was refilled — it just doesn't join today's session.
+    expect(graduating!.body.slotsFilled).toHaveLength(1)
 
     const after = await authed(token).get('/api/session/today')
-    const tail = after.body.exercises.slice(before.body.count)
+    expect(after.body.count).toBe(before.body.count)
+    expect(order(after.body)).toEqual(order(before.body))
 
-    expect(order(after.body).slice(0, before.body.count)).toEqual(
-      order(before.body),
+    // The verse that took the freed slot is drillable straight away, though,
+    // because practice reads the slots rather than the day's plan.
+    const drill = await authed(token).get('/api/session/today?practice=true')
+    const arrived = graduating!.body.slotsFilled[0].verse_id
+    expect(drill.body.exercises.map((e: WireExercise) => e.verseId)).toContain(
+      arrived,
     )
-    expect(tail).toHaveLength(3)
-    const refilled = new Set(tail.map((e: WireExercise) => e.verseId))
-    expect(refilled.size).toBe(1)
-    expect(knownVerses.has([...refilled][0])).toBe(false)
+  })
+
+  it('keeps a hand-swapped slot out of today’s queue', async () => {
+    const { token } = await signup()
+    const before = await authed(token).get('/api/session/today')
+
+    // Take a verse the user isn't already working on and put it in slot 1.
+    const planned = new Set(
+      before.body.exercises.map((e: WireExercise) => e.verseId),
+    )
+    const queue = (await authed(token).get('/api/queue')).body.queue as {
+      id: string
+    }[]
+    const incoming = queue.find((v) => !planned.has(v.id))!.id
+
+    const swap = await authed(token)
+      .post('/api/slots/replace')
+      .send({ verseId: incoming, slot: 1 })
+    expect(swap.status).toBe(200)
+
+    // The day's session is what it was when the day opened...
+    const after = await authed(token).get('/api/session/today')
+    expect(after.body.count).toBe(before.body.count)
+    expect(order(after.body)).toEqual(order(before.body))
+
+    // ...while practice follows the slots.
+    const drill = await authed(token).get('/api/session/today?practice=true')
+    expect(drill.body.exercises.map((e: WireExercise) => e.verseId)).toContain(
+      incoming,
+    )
+  })
+
+  it('holds a graduated verse’s remaining repetitions at the planned stage', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    let day = new Date('2026-01-01T00:00:00Z')
+    vi.setSystemTime(day)
+
+    const { token } = await signup({ timezone: 'UTC' })
+    const me = await authed(token).get('/api/me')
+    const userVerseId = me.body.slots.active[0].userVerseId
+
+    // Two days of upgrades leaves it at learning_heavy, one run from graduating.
+    for (let step = 0; step < 2; step += 1) {
+      for (let i = 0; i < 3; i += 1) await attempt(token, userVerseId)
+      day = new Date(day.getTime() + 24 * 60 * 60 * 1000)
+      vi.setSystemTime(day)
+    }
+
+    const before = await authed(token).get('/api/session/today')
+    const planned = (body: { exercises: WireExercise[] }) =>
+      body.exercises.filter((e) => e.userVerseId === userVerseId)
+    expect(planned(before.body).map((e) => e.stage)).toEqual([
+      'learning_heavy',
+      'learning_heavy',
+      'learning_heavy',
+    ])
+
+    let graduating
+    for (let i = 0; i < 3; i += 1)
+      graduating = await attempt(token, userVerseId)
+    expect(graduating!.body.userVerse.stage).toBe('review')
+
+    // The verse is in review now, but the exercises planned this morning are
+    // still the ones that were planned: same stage, same blanks, same tiles —
+    // not the every-word-blanked drill review would build.
+    const after = await authed(token).get('/api/session/today')
+    expect(planned(after.body).map((e) => e.stage)).toEqual([
+      'learning_heavy',
+      'learning_heavy',
+      'learning_heavy',
+    ])
+    expect(planned(after.body).map((e) => e.blankedText)).toEqual(
+      planned(before.body).map((e) => e.blankedText),
+    )
+
+    // ...while the progress riding alongside them reports where it really is.
+    for (const exercise of planned(after.body)) {
+      expect(exercise.userVerse.stage).toBe('review')
+    }
+  })
+
+  it('holds a mid-session tier upgrade at the planned stage', async () => {
+    const { token } = await signup()
+    const before = await authed(token).get('/api/session/today')
+    const userVerseId = before.body.exercises[0].userVerseId
+    const planned = (body: { exercises: WireExercise[] }) =>
+      body.exercises.filter((e) => e.userVerseId === userVerseId)
+
+    // Three correct answers promote it to learning_medium mid-session.
+    let last
+    for (let i = 0; i < 3; i += 1) last = await attempt(token, userVerseId)
+    expect(last!.body.userVerse.stage).toBe('learning_medium')
+
+    const after = await authed(token).get('/api/session/today')
+    expect(planned(after.body).map((e) => e.stage)).toEqual(
+      planned(before.body).map((e) => e.stage),
+    )
+    expect(planned(after.body).map((e) => e.blankedText)).toEqual(
+      planned(before.body).map((e) => e.blankedText),
+    )
+
+    // Tomorrow's plan is the one that picks the new tier up.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
+    const tomorrow = await authed(token).get('/api/session/today')
+    expect(planned(tomorrow.body).map((e) => e.stage)).toEqual([
+      'learning_medium',
+      'learning_medium',
+      'learning_medium',
+    ])
+  })
+
+  it('falls back to the live stage for a day planned before stages were pinned', async () => {
+    const { token } = await signup()
+    const before = await authed(token).get('/api/session/today')
+    const userVerseId = before.body.exercises[0].userVerseId
+
+    // A day's rows as they looked before the stage column existed.
+    db.prepare(
+      'UPDATE session_exercise SET stage = NULL WHERE user_verse_id = ?',
+    ).run(userVerseId)
+
+    for (let i = 0; i < 3; i += 1) await attempt(token, userVerseId)
+
+    const after = await authed(token).get('/api/session/today')
+    const forVerse = (after.body.exercises as WireExercise[]).filter(
+      (e) => e.userVerseId === userVerseId,
+    )
+    expect(forVerse.every((e) => e.stage === 'learning_medium')).toBe(true)
+  })
+
+  it('plans a day that opened with nothing to do once work appears', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+
+    const { token } = await signup({ timezone: 'UTC' })
+
+    // Empty every slot, then open the day: nothing is due and nothing is
+    // slotted, so there is no session to freeze.
+    const me = await authed(token).get('/api/me')
+    for (const slot of me.body.slots.active as { userVerseId: string }[]) {
+      db.prepare('UPDATE user_verse SET slot = NULL WHERE id = ?').run(
+        slot.userVerseId,
+      )
+    }
+    const empty = await authed(token).get('/api/session/today')
+    expect(empty.body.count).toBe(0)
+
+    // A slot filled later the same day still gets a session, rather than the
+    // user being stuck with an empty day until midnight.
+    const returning = (me.body.slots.active as { verseId: string }[])[0].verseId
+    await authed(token).post('/api/slots/replace').send({
+      verseId: returning,
+      slot: 1,
+    })
+
+    const filled = await authed(token).get('/api/session/today')
+    expect(filled.body.count).toBe(3)
+    expect(
+      filled.body.exercises.every((e: WireExercise) => e.verseId === returning),
+    ).toBe(true)
   })
 })
 

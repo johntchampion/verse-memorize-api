@@ -66,6 +66,9 @@ export interface SessionExerciseRow {
   user_verse_id: string
   queue: SessionQueue
   instance: number
+  /** The stage the exercise was planned at; NULL for rows planned before it
+      was pinned, which fall back to the verse's current stage. */
+  stage: Stage | null
   /** ISO 8601, or NULL while the exercise is still outstanding. */
   completed_at: string | null
   /** 0 or 1 once answered; NULL while outstanding, or if it was answered

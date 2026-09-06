@@ -77,10 +77,15 @@ function sessionEventBodies(rows: SessionEventRow[], translationCode: string) {
  * Today's ordered exercise queue, or with `?practice=true` a short drill of
  * the slotted verses.
  *
- * The daily queue is stable for the day and each exercise carries `completed`,
- * so a client that quit part-way through resumes rather than restarting. The
- * practice drill is separate work: it never counts toward finishing the day,
- * and it is meant to be called repeatedly.
+ * The daily queue is fixed for the day — which exercises, in what order, at
+ * what difficulty, all decided when the day is first opened and unchanged by
+ * anything that happens after, including a slot swap or a graduation. Note that
+ * this means an exercise's `stage` can differ from its `userVerse.stage` later
+ * in the day: the first is what it was planned at, the second is where the
+ * verse stands now. Each exercise carries `completed`, so a client that quit
+ * part-way through resumes rather than restarting. The practice drill is
+ * separate work: it tracks the slots as they stand right now, it never counts
+ * toward finishing the day, and it is meant to be called repeatedly.
  *
  * `events` and `correctCount` cover the whole day, not the part of it the
  * caller was present for, which is what lets a resumed session recap everything

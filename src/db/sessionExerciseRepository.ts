@@ -6,6 +6,7 @@ import {
   type SessionQueue,
   toPlannedExercise,
 } from '../domain/sessionExercise'
+import type { Stage } from '../domain/stage'
 
 /**
  * Every session_exercise query. Like userVerseRepository, statements are
@@ -13,11 +14,12 @@ import {
  * migrate() has created the table.
  */
 
-/** What ensureTodayPlan hands down to be appended; position is assigned here. */
+/** What ensureTodayPlan hands down to be written; position is assigned here. */
 export interface NewPlanItem {
   userVerseId: string
   queue: SessionQueue
   instance: number
+  stage: Stage
 }
 
 /** Today's plan in order. Empty means the day hasn't been started yet. */
@@ -33,30 +35,33 @@ export function forDay(userId: string, date: string): PlannedExercise[] {
 }
 
 /**
- * Appends items to the end of a day's plan, numbering from `startPosition`.
- * Callers never renumber what is already there — a position, once handed to a
- * client, is the client's place in the queue for the rest of the day.
+ * Writes a day's plan in one go, numbering from 0.
+ *
+ * Called once per user per day and never added to afterwards: a position, once
+ * handed to a client, is that exercise's place in the queue for the rest of
+ * the day, and the length of the queue is settled the moment the day starts.
  */
-export function append(
+export function create(
   userId: string,
   date: string,
   items: NewPlanItem[],
-  startPosition: number,
 ): void {
   const insert = db.prepare(
     `INSERT INTO session_exercise
-       (id, user_id, session_date, position, user_verse_id, queue, instance)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (id, user_id, session_date, position, user_verse_id, queue, instance,
+        stage)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   )
-  items.forEach((item, offset) => {
+  items.forEach((item, position) => {
     insert.run(
       randomUUID(),
       userId,
       date,
-      startPosition + offset,
+      position,
       item.userVerseId,
       item.queue,
       item.instance,
+      item.stage,
     )
   })
 }

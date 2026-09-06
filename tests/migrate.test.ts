@@ -176,6 +176,16 @@ describe('migrate', () => {
 
     expect(columnNames('session_exercise')).toContain('correct')
   })
+
+  it('adds session_exercise.stage to a database that predates it', () => {
+    migrate()
+    db.exec('ALTER TABLE session_exercise DROP COLUMN stage')
+    expect(columnNames('session_exercise')).not.toContain('stage')
+
+    migrate()
+
+    expect(columnNames('session_exercise')).toContain('stage')
+  })
 })
 
 describe('the pre-rewrite guard', () => {

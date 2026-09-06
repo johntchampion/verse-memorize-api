@@ -13,7 +13,9 @@ import { isLearningStage, isReviewStage } from '../domain/stage'
 export const EXERCISES_PER_LEARNING_VERSE = 3
 
 /**
- * What today's session should contain, given the user's verses right now.
+ * What today's session should contain, given the user's verses as they stand
+ * at the moment the day is planned. Read exactly once per day — see
+ * ensureTodayPlan.
  *
  * Deliberately never touches the verse bank: verse_id is translation-
  * independent, so a plan built while reading one translation is valid for
@@ -32,7 +34,14 @@ function desiredItems(userId: string, today: string): NewPlanItem[] {
       // its schedule. A null dueAt means unscheduled — a verse queued for
       // relearning sits out of the rotation until a slot picks it up.
       if (!isDue(progress, today)) continue
-      runs.push([{ userVerseId: progress.id, queue: 'review', instance: 0 }])
+      runs.push([
+        {
+          userVerseId: progress.id,
+          queue: 'review',
+          instance: 0,
+          stage: progress.stage,
+        },
+      ])
       continue
     }
 
@@ -42,6 +51,10 @@ function desiredItems(userId: string, today: string): NewPlanItem[] {
           userVerseId: progress.id,
           queue: 'learning' as const,
           instance,
+          // Pinned, not read again at render time: all three repetitions are
+          // the ones planned this morning, even if the verse changes tier or
+          // graduates between the first and the last.
+          stage: progress.stage,
         })),
       )
     }
@@ -58,30 +71,31 @@ function desiredItems(userId: string, today: string): NewPlanItem[] {
   return items
 }
 
-/** The identity of a plan slot, as stored by the UNIQUE constraint. */
-function key(item: { userVerseId: string; queue: string; instance: number }) {
-  return `${item.userVerseId}|${item.queue}|${item.instance}`
-}
-
 /**
- * Today's plan, creating it on first use and topping it up thereafter.
+ * Today's plan, written once on first use and fixed from then on.
  *
- * Append-only within a day. Anything already planned keeps its position even
- * once it stops being "due" — an answered review or a graduated verse stays in
- * the list, marked done, instead of vanishing out from under the client. New
- * work does show up: a slot refilled mid-session lands at the tail, which is
- * how it has always behaved, just without reshuffling what came before.
+ * The day's work is decided by the state at the moment the day is first
+ * touched, and nothing that happens afterwards adds to it or takes from it: a
+ * verse that graduates mid-session stays in the list, marked done as its
+ * repetitions are answered, and the verse that refills the slot behind it waits
+ * for tomorrow. Same for a slot the user swaps by hand — the new occupant is
+ * drillable straight away through the practice route, which reads the slots
+ * live, but the day's own list does not move under a client part-way through
+ * it.
+ *
+ * A day whose desired set comes out empty writes nothing, so it is planned
+ * again on the next call rather than being frozen empty — a user with nothing
+ * due at midnight still gets a session once a slot is filled.
  */
 export const ensureTodayPlan = db.transaction(
   (userId: string, today: string): PlannedExercise[] => {
     const existing = planned.forDay(userId, today)
-    const seen = new Set(existing.map(key))
-    const missing = desiredItems(userId, today).filter(
-      (item) => !seen.has(key(item)),
-    )
-    if (missing.length === 0) return existing
+    if (existing.length > 0) return existing
 
-    planned.append(userId, today, missing, existing.length)
+    const items = desiredItems(userId, today)
+    if (items.length === 0) return existing
+
+    planned.create(userId, today, items)
     return planned.forDay(userId, today)
   },
 )

@@ -178,6 +178,7 @@ const CASCADE_REBUILDS: CascadeRebuild[] = [
       'user_verse_id',
       'queue',
       'instance',
+      'stage',
       'completed_at',
       'correct',
     ],
@@ -190,6 +191,7 @@ const CASCADE_REBUILDS: CascadeRebuild[] = [
         user_verse_id TEXT NOT NULL REFERENCES user_verse(id) ON DELETE CASCADE,
         queue TEXT NOT NULL,
         instance INTEGER NOT NULL,
+        stage TEXT,
         completed_at TEXT,
         correct INTEGER,
         UNIQUE(user_id, session_date, position),
@@ -323,6 +325,12 @@ export function migrate(): void {
   // has no honest value to backfill, and NULL reads as "answered, unknown"
   // rather than as a miss.
   addColumnIfMissing('session_exercise', 'correct', 'INTEGER')
+
+  // Also nullable on purpose, for the same reason: a day already planned before
+  // the stage was pinned has no stage to backfill, and NULL reads as "not
+  // pinned" — those rows keep rendering at the verse's live stage until the
+  // day rolls over. See sessionBuilder.
+  addColumnIfMissing('session_exercise', 'stage', 'TEXT')
 
   migrateAddCascadeDeletes()
 }
