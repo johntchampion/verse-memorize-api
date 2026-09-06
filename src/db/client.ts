@@ -7,6 +7,7 @@ import Database from 'better-sqlite3'
 export type {
   AttemptRow,
   ExerciseType,
+  PushSubscriptionRow,
   SessionEventRow,
   SessionExerciseRow,
   SessionLogRow,
@@ -331,6 +332,14 @@ export function migrate(): void {
   // pinned" — those rows keep rendering at the verse's live stage until the
   // day rolls over. See sessionBuilder.
   addColumnIfMissing('session_exercise', 'stage', 'TEXT')
+
+  // Opt-in. An existing user who never asked for reminders shouldn't start
+  // getting them just because the column arrived.
+  addColumnIfMissing('users', 'reminders_enabled', 'INTEGER NOT NULL DEFAULT 0')
+
+  // Nullable, so "never reminded" is representable and an existing user is
+  // correctly treated as not yet reminded today.
+  addColumnIfMissing('users', 'reminder_last_sent_date', 'TEXT')
 
   migrateAddCascadeDeletes()
 }

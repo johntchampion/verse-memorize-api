@@ -7,6 +7,7 @@ import { ApiError } from './lib/errors'
 import { requireAuth } from './middleware/auth'
 import { authRouter } from './routes/auth'
 import { meRouter } from './routes/me'
+import { pushRouter } from './routes/push'
 import { queueRouter } from './routes/queue'
 import { sessionRouter } from './routes/session'
 import { translationsRouter } from './routes/translations'
@@ -25,6 +26,7 @@ export function createApp() {
   app.use('/api', requireAuth, queueRouter)
   app.use('/api', requireAuth, meRouter)
   app.use('/api', requireAuth, translationsRouter)
+  app.use('/api', requireAuth, pushRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'not found' })

@@ -103,7 +103,8 @@ function slottedLinesFor(userId: string, translation: string): string[] {
   const slotted = slottedByUser.get(userId)
   if (!slotted || slotted.length === 0) return ['—']
   return slotted.map((uv) => {
-    const reference = getVerse(uv.verse_id, translation)?.reference ?? uv.verse_id
+    const reference =
+      getVerse(uv.verse_id, translation)?.reference ?? uv.verse_id
     return `${reference} (${uv.stage})`
   })
 }

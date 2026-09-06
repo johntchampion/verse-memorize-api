@@ -24,6 +24,10 @@ PORT=3000
 DB_PATH=./data.sqlite
 EOF
 
+# Optional: daily reminders. Without these the server boots normally and
+# simply doesn't send any.
+npx web-push generate-vapid-keys   # paste the pair into .env as below
+
 npm run dev
 curl localhost:3000/health   # {"ok":true}
 ```
@@ -47,12 +51,30 @@ curl -s localhost:3000/api/session/today -H "authorization: Bearer $TOKEN"
 | `npm start`         | Run the built output                      |
 | `npm run stats`     | Usage report — see [Usage report](#usage-report) |
 | `npm run typecheck` | `tsc --noEmit`                            |
+| `npm test`          | Vitest suite (`npm run test:watch` to watch) |
 
-| Env var      | Required                                      | Default         |
-| ------------ | --------------------------------------------- | --------------- |
-| `JWT_SECRET` | **yes** — the server exits at boot without it | —               |
-| `PORT`       | no                                            | `3000`          |
-| `DB_PATH`    | no                                            | `./data.sqlite` |
+| Env var             | Required                                      | Default                     |
+| ------------------- | --------------------------------------------- | --------------------------- |
+| `JWT_SECRET`        | **yes** — the server exits at boot without it | —                           |
+| `PORT`              | no                                            | `3000`                      |
+| `DB_PATH`           | no                                            | `./data.sqlite`             |
+| `VAPID_PUBLIC_KEY`  | no — without it reminders are off             | —                           |
+| `VAPID_PRIVATE_KEY` | no — without it reminders are off             | —                           |
+| `VAPID_SUBJECT`     | with the keys — a real `mailto:` or `https:` contact | —                    |
+
+Auth is load-bearing, so a missing `JWT_SECRET` is fatal at boot. Reminders are
+not, so a deployment with **no** VAPID configuration starts anyway: the
+scheduler doesn't run and `/api/push/*` answers `503`, which is what tells the
+client to show the reminder toggle as unavailable rather than broken. See
+[Daily reminders](#daily-reminders).
+
+Configuration that is present but *wrong* does fail at boot. In particular
+`VAPID_SUBJECT` must be a contact address that could actually receive mail:
+**Apple rejects a JWT whose `sub` uses a reserved domain** (`.invalid`,
+`.example`, `.test`, `.localhost`) with `403 {"reason":"BadJwtToken"}`, while
+Firefox and Chrome accept it happily. A placeholder there produces a deployment
+where Safari alone silently stops working, so the server refuses to start with
+one rather than let you find out from a bug report.
 
 ---
 
@@ -80,6 +102,9 @@ docker run -d \
   --name verse-memorize-api \
   -p 3000:3000 \
   -e JWT_SECRET="$(openssl rand -hex 32)" \
+  -e VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" \
+  -e VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" \
+  -e VAPID_SUBJECT="mailto:you@example.com" \
   -v verse-memorize-data:/app/data \
   --restart unless-stopped \
   verse-memorize-api
@@ -99,6 +124,17 @@ Notes:
 - `PORT` defaults to `3000` and is what's `EXPOSE`d; map it with `-p` as needed.
 - Rebuild and recreate the container to pick up code changes — there's no hot
   reload in the image (`npm run dev` is a local-only workflow).
+- **Generate the VAPID pair once and never rotate it.** A push service rejects
+  a message signed by a key that doesn't match the one the browser subscribed
+  with, so rotating silently invalidates every existing subscription: `403`s in
+  the log, nothing in the UI, and every user having to re-enable a toggle they
+  have no reason to touch. Treat them like `JWT_SECRET` — secret store, not a
+  literal in a compose file.
+- **Run exactly one container.** The reminder scheduler is a ticker inside the
+  web process. Two replicas over one SQLite file would each claim correctly —
+  the claim is an atomic conditional `UPDATE` — but two writers on one WAL file
+  buys `SQLITE_BUSY` for nothing. This was already a single-container deploy;
+  now it's a requirement rather than a coincidence.
 
 ---
 
@@ -256,6 +292,69 @@ A single miss reverts it to `review` at interval 1, **and counts as the first of
 review's two strikes** — one miss on the next due date queues it for a slot
 without waiting for two fresh misses. Same-day repeats are inert here too.
 
+### Daily reminders
+
+An opt-in push notification, off until the user turns it on in settings.
+
+**When it fires.** Half an hour after the time of day they last actually
+started practising — so the nudge lands when they are already in the habit of
+being free — but never later than **21:00 local**, because a reminder that
+arrives at bedtime is one they won't act on. Precisely:
+
+```
+anchor = the first attempt on the most recent *prior* day the user
+         attempted anything, within the last 90 days
+due    = min(anchor + 30 minutes, 21:00), all in the user's timezone
+```
+
+The anchor is a *prior* day on purpose: practising this morning must not move
+this evening's reminder. With no anchor — a new account, or one quiet for
+longer than the 90-day lookback — the due time is simply 21:00. That window is
+both a cost control (attempts are never pruned, so an unbounded lookup walks
+the account's whole history) and the right answer: someone who hasn't practised
+in three months has no habitual time left to aim at.
+
+**When it doesn't fire.** Two suppressions, both checked at the due minute:
+
+- a `session_log` row already exists for today's local date — they're done, and
+  the day is claimed so the checks don't repeat every minute until midnight;
+- they recorded an attempt in the last 30 minutes — they're practising right
+  now. This one deliberately does *not* claim the day: if they stop without
+  finishing, the reminder re-arms 30 minutes after their last attempt.
+
+**At most one per user per local day.** `users.reminder_last_sent_date` holds
+the local date, claimed by an atomic conditional `UPDATE` **before** any
+network call. That ordering is the trade: a crash between the claim and the
+send loses that day's reminder, where send-then-record would re-send it on
+restart. A user who gets the same nudge three times from a crash-looping
+container turns the feature off and never turns it back on, so losing a day is
+the cheaper failure.
+
+The state is per *user*, not per subscription — a phone and a laptop are two
+`push_subscription` rows sharing one reminder, fanned out in parallel. A `404`
+or `410` from the push service means that endpoint is dead and the row is
+deleted; anything else leaves it alone and logs.
+
+**Reading a `403`.** It means the push service rejected our credentials rather
+than our request, so it arrives for every subscription on that service at once.
+Two causes, told apart by the response body and by which services are affected:
+a rotated VAPID key pair breaks all of them, while
+`{"reason":"BadJwtToken"}` from `web.push.apple.com` alone is almost always the
+`VAPID_SUBJECT` — Apple validates it and the others don't.
+
+**Best-effort, by design.** The scheduler is a `setInterval` in the web process
+([`services/reminderScheduler.ts`](./src/services/reminderScheduler.ts)), so
+reminders stop while the process is down. A two-hour catch-up window covers a
+deploy or a restart; it deliberately does not cover an overnight outage, since
+a 21:00 reminder delivered at 07:00 is worse than none. Nothing stale survives
+the night either way — the next tick falls on a new local date, and that date's
+due instant is in the future.
+
+The tick is cheap: one filtered scan of `users` a minute, and for almost every
+row the answer is a string compare against `reminder_last_sent_date`. The
+queries that cost something run once per opted-in user per local day, in the
+minute their reminder comes due.
+
 ### Tuning constants
 
 All of these are exported from
@@ -356,20 +455,23 @@ src/
   db/userVerseRepository.ts Every user_verse query; returns domain models
   db/sessionExerciseRepository.ts  Every session_exercise query
   db/sessionEventRepository.ts     Every session_event query
+  db/attemptRepository.ts   Per-user attempt lookups; bounded on purpose
+  db/pushSubscriptionRepository.ts Every push_subscription query
   domain/
     stage.ts                The Stage union and the ladder between stages
     userVerse.ts            UserVerse model, row mapping, wire-format shim
     sessionExercise.ts      PlannedExercise model and row mapping
     sessionEvent.ts         Pure "what did this attempt move" classifier
     progression.ts          Pure attempt -> next-state rules + constants
-  lib/dates.ts              Timezone-aware day boundaries
+    reminder.ts             Pure "when is the reminder due, and send it?" rules
+  lib/dates.ts              Timezone-aware day boundaries and times of day
   lib/errors.ts             ApiError and friends; status codes for services
   lib/http.ts               parseBody
   lib/translation.ts        Resolves the translation for a request
   lib/words.ts              Shared word splitting (tiles + validator)
   middleware/auth.ts        JWT sign/verify, requireAuth
   middleware/translation.ts Resolves req.translation, 400s on unknown
-  routes/                   auth, session, verses, queue, me, translations
+  routes/                   auth, session, verses, queue, me, translations, push
   services/
     stageMachine.ts         Applies a progression transition + side effects
     slotRefill.ts           Slot fill and relearning priority
@@ -377,6 +479,8 @@ src/
     sessionPlan.ts          What today's queue holds; persists and resumes it
     sessionBuilder.ts       Renders the plan into exercises
     exerciseBuilder.ts      Blanking and word banks
+    reminderScheduler.ts    The daily reminder ticker, claim and fan-out
+    pushSender.ts           VAPID config and Web Push delivery
   app.ts / server.ts        Wiring and boot
 ```
 
@@ -413,13 +517,17 @@ camelCase `UserVerse` model.
 | `GET`   | `/api/verses/:id`       | One verse + that user's history                 |
 | `GET`   | `/api/translations`     | Translations a user can pick between            |
 | `GET`   | `/api/me`               | Profile, streak, slot state                     |
-| `PATCH` | `/api/me`               | Update timezone and/or translation              |
+| `PATCH` | `/api/me`               | Update timezone, translation and/or reminders   |
 | `GET`   | `/api/queue`            | The practice queue, in order, plus themes       |
 | `PUT`   | `/api/queue`            | Store a custom queue order                      |
 | `DELETE`| `/api/queue`            | Reset the queue to the default order            |
 | `POST`  | `/api/queue/theme`      | Move a theme to the front of the queue          |
 | `POST`  | `/api/queue/next`       | Move one verse to the next-up spot              |
 | `POST`  | `/api/slots/replace`    | Put a verse into a chosen slot                  |
+| `GET`   | `/api/push/key`         | VAPID public key for `PushManager.subscribe`    |
+| `POST`  | `/api/push/subscribe`   | Register this browser for pushes                |
+| `POST`  | `/api/push/unsubscribe` | Drop one of your own registrations              |
+| `POST`  | `/api/push/test`        | Send the reminder to your own devices now       |
 
 `GET /api/session/today` returns the day's queue in a fixed order, each exercise
 carrying `completed`, `correct` and the verse's `userVerse` progress (the same
@@ -447,8 +555,8 @@ recorded, so a later resume of the day's session includes what the drill moved.
 
 `GET /api/verses`, `/api/verses/:id` and `/api/session/today` accept an optional
 `?translation=CODE` override and echo back the `translation` they served. `PATCH
-/api/me` takes `timezone`, `translation`, or both — at least one is required, and
-an unknown value for either is a `400`. `POST /auth/signup` accepts an optional
+/api/me` takes `timezone`, `translation`, `remindersEnabled`, or any combination
+— at least one is required, and an unknown timezone or translation is a `400`. `POST /auth/signup` accepts an optional
 `translation` alongside `timezone`.
 
 Browse statuses are `not_started` / `active` / `review` / `mastered`, with
@@ -457,6 +565,15 @@ Every verse's text is served regardless of status — nothing is locked.
 
 `POST /api/session/complete` is idempotent per calendar day in the user's
 timezone — calling it twice won't double-count toward the streak.
+
+The `/api/push/*` endpoints all answer `503` on a deployment with no VAPID keys.
+`POST /api/push/subscribe` takes a `PushSubscription.toJSON()` body verbatim and
+is idempotent on its `endpoint`, so a client may re-send it on every launch —
+which it should, since only the browser knows whether its subscription survived.
+Unsubscribe is scoped to the caller, and `POST /api/push/test` can only ever
+address the caller's own devices; it returns `{ sent, removed, failed }`.
+Turning `remindersEnabled` off leaves the subscriptions in place, so switching
+it back on costs no permission prompt and no re-subscribe.
 
 ---
 
@@ -637,10 +754,24 @@ and `tsc` will point at every switch and lookup table that needs the new case.
   and `streak_date` are local dates written at the time of the attempt, so moving
   timezone can make a day cap look already-used or already-expired. It's a
   once-in-a-while event and self-corrects the next day.
-- **No test suite yet** (`npm test` is a stub). Verification so far has been
-  manual walks through the stage machine.
+- **Reminders are best-effort.** The day is claimed before the send, so a crash
+  in between loses that reminder rather than duplicating it, and a process down
+  over someone's due minute drops their day past the two-hour catch-up window.
+  Timezone changes are retroactive here too: moving across a date boundary can
+  suppress or duplicate exactly one day, and self-corrects the next.
+- **There is no index on `attempt(created_at)`, deliberately.** The selective
+  predicate in every reminder query is `user_verse.user_id`, so a
+  `created_at`-first index would force a scan of every user's attempts in the
+  window before filtering — a cost with no benefit. It becomes the right index
+  only if the scheduler is ever rewritten to compute anchors for all users in
+  one batched pass, which is the escape hatch if this ever serves thousands of
+  accounts rather than dozens.
+- **Dead push endpoints are only collected on `404`/`410`.** There is no
+  failure counter: a column written on every send that nothing reads is cruft
+  until an endpoint that `500`s forever is actually observed.
 
 ### Not built (out of scope for v1)
 
-Push notifications · multiple verse sets · admin UI for verses · password reset ·
-Postgres migration · per-verse translation overrides.
+Multiple verse sets · admin UI for verses · password reset · Postgres migration ·
+per-verse translation overrides · a user-chosen reminder time (the derived rule
+is the feature; an override doubles the stored state, the UI and the tests).

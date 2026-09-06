@@ -20,6 +20,11 @@ export interface UserRow {
   created_at: string
   timezone: string
   translation: string
+  /** 0 or 1 — SQLite has no boolean type. */
+  reminders_enabled: number
+  /** Local date (YYYY-MM-DD) the last daily reminder was claimed for, in this
+      user's timezone; NULL until the first one goes out. */
+  reminder_last_sent_date: string | null
 }
 
 export interface UserVerseRow {
@@ -90,4 +95,14 @@ export interface SessionEventRow {
   stage_to: Stage | null
   /** The slot taken, for slot events; NULL otherwise. */
   slot: number | null
+}
+
+export interface PushSubscriptionRow {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  user_agent: string | null
+  created_at: string
 }

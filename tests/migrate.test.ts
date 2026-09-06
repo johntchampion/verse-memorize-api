@@ -15,6 +15,7 @@ function emptyDatabase(): void {
   for (const table of [
     'review_schedule',
     'attempt',
+    'push_subscription',
     'session_event',
     'session_exercise',
     'user_queue',
@@ -152,6 +153,43 @@ describe('migrate', () => {
     migrate()
 
     expect(columnNames('users')).toContain('translation')
+  })
+
+  it('adds the reminder columns to a database that predates them, opted out', () => {
+    migrate()
+    db.exec('ALTER TABLE users DROP COLUMN reminders_enabled')
+    db.exec('ALTER TABLE users DROP COLUMN reminder_last_sent_date')
+    db.prepare(
+      `INSERT INTO users (id, email, password_hash, created_at)
+       VALUES ('u1', 'a@example.com', 'h', '2024-01-01T00:00:00Z')`,
+    ).run()
+
+    migrate()
+
+    expect(columnNames('users')).toContain('reminders_enabled')
+    expect(columnNames('users')).toContain('reminder_last_sent_date')
+
+    // An existing user must not start getting notifications because the
+    // column arrived.
+    const row = db
+      .prepare('SELECT reminders_enabled, reminder_last_sent_date FROM users')
+      .get() as { reminders_enabled: number; reminder_last_sent_date: null }
+    expect(row.reminders_enabled).toBe(0)
+    expect(row.reminder_last_sent_date).toBeNull()
+  })
+
+  it('creates push_subscription on a database that predates it', () => {
+    migrate()
+    db.exec('DROP TABLE push_subscription')
+
+    migrate()
+
+    expect(columnNames('push_subscription')).toEqual(
+      expect.arrayContaining(['endpoint', 'p256dh', 'auth', 'user_id']),
+    )
+    // Born with the cascade rather than retrofitted, so it is deliberately not
+    // in CASCADE_REBUILDS.
+    expect(foreignKeyOnDeletes('push_subscription')).toEqual(['CASCADE'])
   })
 
   it('creates session_event on a database that predates it', () => {

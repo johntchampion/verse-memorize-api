@@ -9,8 +9,17 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   created_at TEXT NOT NULL,      -- ISO 8601
   timezone TEXT NOT NULL DEFAULT 'UTC', -- for "day" boundary calculations
-  translation TEXT NOT NULL DEFAULT 'WEB'  -- code from data/translations/catalog.ts;
+  translation TEXT NOT NULL DEFAULT 'WEB',  -- code from data/translations/catalog.ts;
                                            -- selects which text and decoys are served
+  reminders_enabled INTEGER NOT NULL DEFAULT 0,  -- 0/1; the settings toggle.
+                                                 -- Off by default: a notification
+                                                 -- nobody asked for is spam.
+  reminder_last_sent_date TEXT   -- local date (YYYY-MM-DD) the last daily
+                                 -- reminder was sent, in the user's timezone.
+                                 -- Per-user rather than per-subscription: two
+                                 -- devices share one reminder. Claimed *before*
+                                 -- the send, so a crash mid-send loses a day
+                                 -- rather than duplicating one.
 );
 
 -- One row per verse a user has started. Holds both the learning-tier state and
@@ -150,3 +159,25 @@ CREATE TABLE IF NOT EXISTS session_event (
 
 CREATE INDEX IF NOT EXISTS idx_session_event_day
   ON session_event(user_id, session_date, created_at);
+
+-- One row per browser or device registered to receive push notifications. The
+-- endpoint is the address the push service handed that installation, and it is
+-- globally unique: the same browser re-subscribing against the same VAPID key
+-- gets the same endpoint back, so UNIQUE(endpoint) is what makes subscribing
+-- idempotent, and what reassigns a device that changed hands instead of
+-- addressing it as its previous owner.
+--
+-- No "reminded today" state lives here — that is a per-user fact, on
+-- users.reminder_last_sent_date.
+CREATE TABLE IF NOT EXISTS push_subscription (
+  id TEXT PRIMARY KEY,           -- uuid
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE, -- the push service's address for this install
+  p256dh TEXT NOT NULL,          -- the client's public key, base64url
+  auth TEXT NOT NULL,            -- the client's auth secret, base64url
+  user_agent TEXT,               -- diagnostic only: "why didn't my phone get it"
+  created_at TEXT NOT NULL       -- ISO 8601
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subscription_user
+  ON push_subscription(user_id);

@@ -67,6 +67,7 @@ function profileFor(id: string) {
       timezone: user.timezone,
       translation,
       createdAt: user.created_at,
+      remindersEnabled: user.reminders_enabled === 1,
     },
     streak: currentStreak(sessionDays, today),
     completedToday: sessionDays.has(today),
@@ -105,17 +106,22 @@ meRouter.get('/me', (req, res) => {
   res.json(profile)
 })
 
-// Both fields optional so a client can change one without restating the
-// other, but an empty body is a mistake rather than a no-op update.
+// Every field optional so a client can change one without restating the
+// others, but an empty body is a mistake rather than a no-op update.
 const patchBody = z
   .object({
     timezone: z.string().min(1).optional(),
     translation: z.string().min(1).optional(),
+    remindersEnabled: z.boolean().optional(),
   })
   .refine(
-    (body) => body.timezone !== undefined || body.translation !== undefined,
+    (body) =>
+      body.timezone !== undefined ||
+      body.translation !== undefined ||
+      body.remindersEnabled !== undefined,
     {
-      message: 'expected timezone, translation, or both',
+      message:
+        'expected timezone, translation, remindersEnabled, or a combination',
     },
   )
 
@@ -135,14 +141,17 @@ function isValidTimezone(timezone: string): boolean {
  * `timezone` drives every day-boundary calculation (streaks, due dates,
  * session idempotency). `translation` selects the text and decoys served, and
  * changing it touches no progress at all — user_verse rows key off a
- * translation-independent verse id.
+ * translation-independent verse id. `remindersEnabled` is the daily-reminder
+ * opt-in; turning it off deliberately leaves the user's push subscriptions in
+ * place, so switching it back on costs no permission prompt and no
+ * re-subscribe — the scheduler gates on this flag, not on having a device.
  */
 meRouter.patch('/me', (req, res) => {
   const id = userId(req)
   const body = parseBody(patchBody, req, res)
   if (!body) return
 
-  const { timezone, translation } = body
+  const { timezone, translation, remindersEnabled } = body
 
   if (timezone !== undefined && !isValidTimezone(timezone)) {
     res.status(400).json({ error: 'unknown timezone' })
@@ -156,7 +165,8 @@ meRouter.patch('/me', (req, res) => {
   // Only the supplied fields are written, so a partial PATCH leaves the rest
   // of the row alone.
   const updates: string[] = []
-  const values: string[] = []
+  // Widened past string because SQLite spells a boolean 0 or 1.
+  const values: (string | number)[] = []
   if (timezone !== undefined) {
     updates.push('timezone = ?')
     values.push(timezone)
@@ -164,6 +174,10 @@ meRouter.patch('/me', (req, res) => {
   if (translation !== undefined) {
     updates.push('translation = ?')
     values.push(normalizeTranslation(translation)!)
+  }
+  if (remindersEnabled !== undefined) {
+    updates.push('reminders_enabled = ?')
+    values.push(remindersEnabled ? 1 : 0)
   }
 
   const result = db

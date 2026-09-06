@@ -42,6 +42,10 @@ function seedFullUser(userId: string, verseId: string): void {
     `INSERT INTO attempt (id, user_verse_id, exercise_type, correct, created_at)
      VALUES (?, ?, 'tile_fill_blank', 1, '2024-01-01T00:00:00Z')`,
   ).run(`a-${userId}`, verseId)
+  db.prepare(
+    `INSERT INTO push_subscription (id, user_id, endpoint, p256dh, auth, created_at)
+     VALUES (?, ?, ?, 'p', 'a', '2024-01-01T00:00:00Z')`,
+  ).run(`ps-${userId}`, userId, `https://push.example/${userId}`)
 }
 
 describe('ON DELETE CASCADE', () => {
@@ -64,6 +68,9 @@ describe('ON DELETE CASCADE', () => {
     ).toBeUndefined()
     expect(
       db.prepare('SELECT 1 FROM session_event WHERE user_id = ?').get('u1'),
+    ).toBeUndefined()
+    expect(
+      db.prepare('SELECT 1 FROM push_subscription WHERE user_id = ?').get('u1'),
     ).toBeUndefined()
     // attempt has no user_id column; this proves the cascade from users into
     // user_verse propagates a second time, from the deleted user_verse row

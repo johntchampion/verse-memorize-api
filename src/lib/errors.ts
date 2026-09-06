@@ -29,3 +29,15 @@ export class SlotError extends ApiError {
     super(message, status)
   }
 }
+
+/**
+ * The deployment has no VAPID keys, so it cannot send or accept push
+ * subscriptions. 503 rather than 500: nothing is broken, the feature simply
+ * isn't configured here, and that is what tells the client to render the
+ * reminder toggle as unavailable rather than as failing.
+ */
+export class PushNotConfiguredError extends ApiError {
+  constructor() {
+    super('push notifications are not configured', 503)
+  }
+}
