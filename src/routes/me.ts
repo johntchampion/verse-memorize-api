@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt'
 import { Router } from 'express'
 import { z } from 'zod'
 import { db, type SessionLogRow, type UserRow } from '../db/client'
@@ -189,4 +190,39 @@ meRouter.patch('/me', (req, res) => {
   }
 
   res.json(profileFor(id))
+})
+
+const deleteAccountBody = z.object({ password: z.string().min(1) })
+
+/**
+ * Permanently deletes the caller's account and everything derived from it.
+ *
+ * POST rather than DELETE because it needs a body to re-confirm the password
+ * before an irreversible action, and a DELETE body is the sort of thing
+ * intermediaries feel free to drop (same reasoning as push/unsubscribe).
+ * Deleting the users row is enough on its own: every dependent table
+ * (user_verse, user_queue, session_log, session_exercise, session_event,
+ * push_subscription, and attempt transitively via user_verse) is declared
+ * ON DELETE CASCADE in schema.sql, proven by cascadeDelete.test.ts.
+ */
+meRouter.post('/me/delete-account', async (req, res) => {
+  const id = userId(req)
+  const body = parseBody(deleteAccountBody, req, res)
+  if (!body) return
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
+    UserRow | undefined
+  if (!user) {
+    res.status(404).json({ error: 'user not found' })
+    return
+  }
+
+  const ok = await bcrypt.compare(body.password, user.password_hash)
+  if (!ok) {
+    res.status(401).json({ error: 'invalid password' })
+    return
+  }
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(id)
+  res.json({ deleted: true })
 })

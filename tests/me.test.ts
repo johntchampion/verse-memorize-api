@@ -1,5 +1,6 @@
+import request from 'supertest'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { authed, initDb, resetDb, signup } from './helpers'
+import { app, authed, initDb, resetDb, signup } from './helpers'
 
 beforeAll(() => {
   initDb()
@@ -152,5 +153,46 @@ describe('PATCH /api/me', () => {
       .send({ translation: 'XXX' })
     expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: 'unknown translation' })
+  })
+})
+
+describe('POST /api/me/delete-account', () => {
+  it('deletes the account and revokes the token', async () => {
+    const { token } = await signup({ password: 'password123' })
+
+    const res = await authed(token)
+      .post('/api/me/delete-account')
+      .send({ password: 'password123' })
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ deleted: true })
+
+    const me = await authed(token).get('/api/me')
+    expect(me.status).toBe(404)
+  })
+
+  it('rejects the wrong password and leaves the account intact', async () => {
+    const { token } = await signup({ password: 'password123' })
+
+    const res = await authed(token)
+      .post('/api/me/delete-account')
+      .send({ password: 'wrongpassword' })
+    expect(res.status).toBe(401)
+    expect(res.body).toEqual({ error: 'invalid password' })
+
+    const me = await authed(token).get('/api/me')
+    expect(me.status).toBe(200)
+  })
+
+  it('rejects a missing password', async () => {
+    const { token } = await signup()
+    const res = await authed(token).post('/api/me/delete-account').send({})
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects an unauthenticated request', async () => {
+    const res = await request(app)
+      .post('/api/me/delete-account')
+      .send({ password: 'password123' })
+    expect(res.status).toBe(401)
   })
 })
