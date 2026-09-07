@@ -125,10 +125,10 @@ describe('PATCH /api/me', () => {
     const { token } = await signup()
     const res = await authed(token)
       .patch('/api/me')
-      .send({ timezone: 'America/Chicago', translation: 'esv' })
+      .send({ timezone: 'America/Chicago', translation: 'kjv' })
     expect(res.status).toBe(200)
     expect(res.body.user.timezone).toBe('America/Chicago')
-    expect(res.body.user.translation).toBe('ESV')
+    expect(res.body.user.translation).toBe('KJV')
   })
 
   it('rejects an empty body', async () => {
