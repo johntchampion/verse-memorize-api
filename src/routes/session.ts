@@ -11,13 +11,10 @@ import { NotFoundError } from '../lib/errors'
 import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
-import {
-  buildPracticeSession,
-  buildTodaySession,
-} from '../services/sessionBuilder'
-import { pruneBefore } from '../services/sessionPlan'
-import { refillSlots } from '../services/slotRefill'
-import { recordAttempt } from '../services/stageMachine'
+import { DailySession } from '../models/DailySession'
+import { PracticeDrill } from '../models/PracticeDrill'
+import { Slots } from '../models/Slots'
+import { recordAttempt } from '../services/attemptRecorder'
 
 export const sessionRouter = Router()
 
@@ -56,14 +53,15 @@ sessionRouter.get('/session/today', resolveTranslation, (req, res) => {
   const translationCode = translation(req)
   const practice = practiceRequested(req)
 
+  const timezone = timezoneFor(req)
   const exercises = practice
-    ? buildPracticeSession(id, translationCode)
-    : buildTodaySession(id, timezoneFor(req), translationCode)
+    ? new PracticeDrill(id).exercises(translationCode)
+    : new DailySession(id, todayInTimezone(timezone)).exercises(translationCode)
 
   const events = practice
     ? []
     : SessionEvent.bodies(
-        sessionEvents.forDay(id, todayInTimezone(timezoneFor(req))),
+        sessionEvents.forDay(id, todayInTimezone(timezone)),
         translationCode,
       )
 
@@ -143,7 +141,7 @@ sessionRouter.post('/session/complete', resolveTranslation, (req, res) => {
 
   // Runs either way: a refill that failed earlier (bank exhausted, slot freed
   // between calls) should still get picked up on a repeat call.
-  const slotsFilled = refillSlots(id)
+  const slotsFilled = new Slots(id).refill()
 
   const now = new Date().toISOString()
   const events = slotsFilled.map((row) =>
@@ -152,7 +150,7 @@ sessionRouter.post('/session/complete', resolveTranslation, (req, res) => {
 
   // Nothing reads a past day's plan or a past day's events; this is the one
   // routine call that can clear them out.
-  pruneBefore(id, today)
+  new DailySession(id, today).prunePastDays()
   sessionEvents.pruneBefore(id, today)
 
   const sessionsCompleted = sessionLogs.countForUser(id)

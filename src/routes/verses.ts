@@ -8,7 +8,7 @@ import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
-import { queueVerseIds } from '../services/queue'
+import { PracticeQueue } from '../models/PracticeQueue'
 
 const ATTEMPT_HISTORY_LIMIT = 100
 
@@ -74,9 +74,7 @@ versesRouter.get('/verses/:id', (req, res) => {
       ? { dueAt: progress.dueAt, intervalDays: progress.intervalDays }
       : null
 
-  // Where this verse sits in the practice queue (1 = next up), or null when
-  // it isn't queued — slotted or memorized.
-  const queueIndex = queueVerseIds(id).indexOf(verse.id)
+  const queuePosition = new PracticeQueue(id).positionOf(verse.id)
 
   res.json({
     translation: translationCode,
@@ -87,7 +85,7 @@ versesRouter.get('/verses/:id', (req, res) => {
       text: verse.text,
     },
     themes: themesForVerse(verse.id).map((t) => ({ id: t.id, name: t.name })),
-    queuePosition: queueIndex === -1 ? null : queueIndex + 1,
+    queuePosition,
     status: browseStatusFor(progress?.stage),
     graduatedAt: progress?.graduatedAt ?? null,
     userVerse: progress ? progress.toLegacyBody() : null,

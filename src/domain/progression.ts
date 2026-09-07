@@ -91,12 +91,12 @@ export function isDue(
 
 /** The attempt happened, but nothing about the verse's schedule moves. */
 function unchanged(progress: VerseProgress): Transition {
-  return {
-    next: { ...progress },
-    graduated: false,
-    needsRefill: false,
-    bumpRelearning: false,
-  }
+  return unchangedExcept({ ...progress })
+}
+
+/** A moved verse that asks nothing of the caller. */
+function unchangedExcept(next: VerseProgress): Transition {
+  return { next, graduated: false, needsRefill: false, bumpRelearning: false }
 }
 
 function advanceLearning(
@@ -105,29 +105,42 @@ function advanceLearning(
   today: string,
   now: string,
 ): Transition {
+  return correct
+    ? learningCorrect(progress, today, now)
+    : learningMiss(progress, today)
+}
+
+function learningMiss(progress: VerseProgress, today: string): Transition {
   const next = { ...progress }
-  const spent = tierChangeSpentToday(progress, today)
 
-  if (!correct) {
-    // Unlike the correct-streak, this one is allowed to span days.
-    next.consecutiveIncorrect += 1
-    next.consecutiveCorrect = 0
-    next.streakDate = null
+  // Unlike the correct-streak, this one is allowed to span days.
+  next.consecutiveIncorrect += 1
+  next.consecutiveCorrect = 0
+  next.streakDate = null
 
-    if (next.consecutiveIncorrect >= TIER_DOWNGRADE_THRESHOLD) {
-      // Spent either way: after a blocked downgrade a fresh pair of misses is
-      // needed to trigger one again.
-      next.consecutiveIncorrect = 0
-
-      // Null at learning_light, the floor — two misses there change nothing.
-      const demoted = previousLearningStage(progress.stage)
-      if (demoted && !spent) {
-        next.stage = demoted
-        next.lastDowngradeDate = today
-      }
-    }
-    return { next, graduated: false, needsRefill: false, bumpRelearning: false }
+  if (next.consecutiveIncorrect < TIER_DOWNGRADE_THRESHOLD) {
+    return unchangedExcept(next)
   }
+
+  // Spent either way: after a blocked downgrade a fresh pair of misses is
+  // needed to trigger one again.
+  next.consecutiveIncorrect = 0
+
+  // Null at learning_light, the floor — two misses there change nothing.
+  const demoted = previousLearningStage(progress.stage)
+  if (demoted && !tierChangeSpentToday(progress, today)) {
+    next.stage = demoted
+    next.lastDowngradeDate = today
+  }
+  return unchangedExcept(next)
+}
+
+function learningCorrect(
+  progress: VerseProgress,
+  today: string,
+  now: string,
+): Transition {
+  const next = { ...progress }
 
   // The three-in-a-row has to land inside one calendar day, so a run carried
   // over from yesterday starts again at one.
@@ -138,7 +151,7 @@ function advanceLearning(
   next.streakDate = today
 
   if (next.consecutiveCorrect < TIER_ADVANCE_THRESHOLD) {
-    return { next, graduated: false, needsRefill: false, bumpRelearning: false }
+    return unchangedExcept(next)
   }
 
   // Whether or not the upgrade lands, the run is spent. A blocked upgrade
@@ -146,20 +159,22 @@ function advanceLearning(
   next.consecutiveCorrect = 0
   next.streakDate = null
 
-  if (spent) {
-    return { next, graduated: false, needsRefill: false, bumpRelearning: false }
-  }
+  if (tierChangeSpentToday(progress, today)) return unchangedExcept(next)
 
   next.lastUpgradeDate = today
   const promoted = nextLearningStage(progress.stage)
-
   if (promoted) {
     next.stage = promoted
-    return { next, graduated: false, needsRefill: false, bumpRelearning: false }
+    return unchangedExcept(next)
   }
+  return graduate(next, today, now)
+}
 
-  // Top of the ladder, so the upgrade graduates instead: empty the slot, stamp
-  // the graduation timestamp, and open at the bottom of the interval ladder.
+/**
+ * Top of the ladder, so the upgrade graduates instead: empty the slot, stamp
+ * the graduation, and open at the bottom of the interval ladder.
+ */
+function graduate(next: VerseProgress, today: string, now: string): Transition {
   next.stage = 'review'
   next.slot = null
   next.graduatedAt = now
@@ -204,32 +219,41 @@ function advanceReview(
   now: string,
 ): Transition {
   if (!isDue(progress, today)) return unchanged(progress)
+  return correct
+    ? reviewCorrect(progress, today)
+    : reviewMiss(progress, today, now)
+}
 
+function reviewCorrect(progress: VerseProgress, today: string): Transition {
   const next = { ...progress }
   const interval = progress.intervalDays ?? 1
 
-  if (correct) {
-    next.consecutiveIncorrect = 0
-    next.consecutiveCorrect += 1
+  next.consecutiveIncorrect = 0
+  next.consecutiveCorrect += 1
+  next.intervalDays = interval
 
-    if (next.consecutiveCorrect >= REVIEW_ADVANCE_THRESHOLD) {
-      next.consecutiveCorrect = 0
+  if (next.consecutiveCorrect >= REVIEW_ADVANCE_THRESHOLD) {
+    next.consecutiveCorrect = 0
 
-      if (interval >= MAX_INTERVAL_DAYS) {
-        // Nowhere left to extend the interval to, so the bump becomes mastery
-        // instead.
-        next.stage = 'mastered'
-        next.intervalDays = MAX_INTERVAL_DAYS
-      } else {
-        next.intervalDays = nextInterval(interval)
-      }
+    if (interval >= MAX_INTERVAL_DAYS) {
+      // Nowhere left to extend the interval to, so the bump becomes mastery.
+      next.stage = 'mastered'
+      next.intervalDays = MAX_INTERVAL_DAYS
     } else {
-      next.intervalDays = interval
+      next.intervalDays = nextInterval(interval)
     }
-
-    next.dueAt = addDays(today, next.intervalDays ?? 1)
-    return { next, graduated: false, needsRefill: false, bumpRelearning: false }
   }
+
+  next.dueAt = addDays(today, next.intervalDays ?? 1)
+  return unchangedExcept(next)
+}
+
+function reviewMiss(
+  progress: VerseProgress,
+  today: string,
+  now: string,
+): Transition {
+  const next = { ...progress }
 
   next.consecutiveCorrect = 0
   next.consecutiveIncorrect += 1
@@ -237,11 +261,11 @@ function advanceReview(
   if (next.consecutiveIncorrect < REVIEW_DEMOTION_THRESHOLD) {
     next.intervalDays = 1
     next.dueAt = addDays(today, 1)
-    return { next, graduated: false, needsRefill: false, bumpRelearning: false }
+    return unchangedExcept(next)
   }
 
   // Out of review entirely: it waits here, unscheduled, until a learning slot
-  // opens and slotRefill re-seats it at learning_heavy.
+  // opens and the refill re-seats it at learning_heavy.
   next.consecutiveIncorrect = 0
   next.needsRelearning = true
   next.relearningQueuedAt = now

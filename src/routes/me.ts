@@ -13,7 +13,7 @@ import {
 } from '../lib/errors'
 import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
-import { MAX_SLOTS } from '../services/slotRefill'
+import { MAX_SLOTS } from '../models/Slots'
 
 export const meRouter = Router()
 

@@ -14,7 +14,7 @@ import {
 } from '../lib/errors'
 import { validate, validated } from '../lib/http'
 import { signToken } from '../middleware/auth'
-import { refillSlots } from '../services/slotRefill'
+import { Slots } from '../models/Slots'
 
 const BCRYPT_COST = 12
 
@@ -51,7 +51,7 @@ authRouter.post('/signup', validate(credentials), async (req, res) => {
   })
 
   // All 3 slots are live immediately — there is no ramp-up.
-  refillSlots(id)
+  new Slots(id).refill()
 
   res.status(201).json({ token: signToken(id), userId: id })
 })

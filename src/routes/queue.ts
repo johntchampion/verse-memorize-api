@@ -6,16 +6,8 @@ import { versesInOrder } from '../data/verses'
 import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
-import {
-  hasCustomOrder,
-  hasSavedProgress,
-  moveThemeToTop,
-  moveVerseToFront,
-  queueVerseIds,
-  resetQueueOrder,
-  setQueueOrder,
-} from '../services/queue'
-import { replaceSlot } from '../services/slotRefill'
+import { PracticeQueue } from '../models/PracticeQueue'
+import { Slots } from '../models/Slots'
 
 export const queueRouter = Router()
 
@@ -28,14 +20,15 @@ queueRouter.use(resolveTranslation)
  * per-verse state, plus the themes with how much of each is still queued.
  */
 function queuePayload(userId: string, translationCode: string) {
+  const queue = new PracticeQueue(userId)
   const progressByVerseId = userVerses.byVerseIdForUser(userId)
   const byId = new Map(versesInOrder(translationCode).map((v) => [v.id, v]))
-  const order = queueVerseIds(userId)
+  const order = queue.verseIds
   const queued = new Set(order)
 
   return {
     translation: translationCode,
-    customized: hasCustomOrder(userId),
+    customized: queue.isCustomized,
     queue: order.flatMap((verseId) => {
       const verse = byId.get(verseId)
       if (!verse) return []
@@ -46,7 +39,7 @@ function queuePayload(userId: string, translationCode: string) {
           reference: verse.reference,
           order: verse.order,
           text: verse.text,
-          inProgress: hasSavedProgress(progress),
+          inProgress: PracticeQueue.hasSavedProgress(progress),
           relearning: progress?.needsRelearning ?? false,
           stage: progress?.stage ?? null,
           themeIds: themesForVerse(verse.id).map((t) => t.id),
@@ -74,14 +67,14 @@ queueRouter.put('/queue', validate(orderBody), (req, res) => {
   const body = validated(req, orderBody)
 
   const id = userId(req)
-  setQueueOrder(id, body.verseIds)
+  new PracticeQueue(id).setOrder(body.verseIds)
   res.json(queuePayload(id, translation(req)))
 })
 
 /** Back to the default order. */
 queueRouter.delete('/queue', (req, res) => {
   const id = userId(req)
-  resetQueueOrder(id)
+  new PracticeQueue(id).reset()
   res.json(queuePayload(id, translation(req)))
 })
 
@@ -96,7 +89,7 @@ queueRouter.post('/queue/theme', validate(themeBody), (req, res) => {
   const body = validated(req, themeBody)
 
   const id = userId(req)
-  moveThemeToTop(id, body.themeId)
+  new PracticeQueue(id).moveThemeToTop(body.themeId)
   res.json(queuePayload(id, translation(req)))
 })
 
@@ -107,7 +100,7 @@ queueRouter.post('/queue/next', validate(nextBody), (req, res) => {
   const body = validated(req, nextBody)
 
   const id = userId(req)
-  moveVerseToFront(id, body.verseId)
+  new PracticeQueue(id).moveVerseToFront(body.verseId)
   res.json(queuePayload(id, translation(req)))
 })
 
@@ -124,11 +117,11 @@ queueRouter.post('/slots/replace', validate(replaceBody), (req, res) => {
   const body = validated(req, replaceBody)
 
   const id = userId(req)
-  const { placed, displaced } = replaceSlot(id, body.verseId, body.slot)
+  const { placed, displaced } = new Slots(id).replace(body.verseId, body.slot)
 
   // A displaced verse should come back soon: it takes the next-up spot rather
   // than sinking to wherever the default order would put it.
-  if (displaced) moveVerseToFront(id, displaced.verseId)
+  if (displaced) new PracticeQueue(id).moveVerseToFront(displaced.verseId)
 
   res.json({
     ...queuePayload(id, translation(req)),
