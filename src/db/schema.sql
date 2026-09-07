@@ -14,12 +14,17 @@ CREATE TABLE IF NOT EXISTS users (
   reminders_enabled INTEGER NOT NULL DEFAULT 0,  -- 0/1; the settings toggle.
                                                  -- Off by default: a notification
                                                  -- nobody asked for is spam.
-  reminder_last_sent_date TEXT   -- local date (YYYY-MM-DD) the last daily
+  reminder_last_sent_date TEXT,  -- local date (YYYY-MM-DD) the last daily
                                  -- reminder was sent, in the user's timezone.
                                  -- Per-user rather than per-subscription: two
                                  -- devices share one reminder. Claimed *before*
                                  -- the send, so a crash mid-send loses a day
                                  -- rather than duplicating one.
+  token_version INTEGER NOT NULL DEFAULT 0  -- carried in every JWT as `tv`. A
+                                            -- password reset bumps it, and every
+                                            -- token minted before that stops
+                                            -- verifying: the only session
+                                            -- revocation this stateless design has.
 );
 
 -- One row per verse a user has started. Holds both the learning-tier state and
@@ -181,3 +186,25 @@ CREATE TABLE IF NOT EXISTS push_subscription (
 
 CREATE INDEX IF NOT EXISTS idx_push_subscription_user
   ON push_subscription(user_id);
+
+-- One row per password reset requested, redeemed at most once. Only the SHA-256
+-- of the emailed token is stored, so a leaked database yields nothing that can
+-- be mailed to anyone or presented to /auth/reset-password.
+--
+-- Redeeming a token is a conditional UPDATE rather than a read-then-write, so
+-- single-use and expiry are one atomic fact -- see repositories/
+-- passwordResetRepository.ts. Superseded rows are marked used rather than
+-- deleted: the throttle reads created_at, and deleting would erase its evidence.
+CREATE TABLE IF NOT EXISTS password_reset (
+  id TEXT PRIMARY KEY,           -- uuid
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,  -- sha256 hex of the token in the email
+  created_at TEXT NOT NULL,      -- ISO 8601; also the throttle's clock
+  expires_at TEXT NOT NULL,      -- ISO 8601
+  used_at TEXT                   -- ISO 8601; NULL until redeemed or superseded
+);
+
+-- Backs both writes that go by user: the throttle's "issued one recently?" read
+-- and the supersede that retires a user's outstanding tokens.
+CREATE INDEX IF NOT EXISTS idx_password_reset_user
+  ON password_reset(user_id, created_at);

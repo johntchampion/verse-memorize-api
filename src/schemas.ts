@@ -36,6 +36,14 @@ export const profilePatch = z
 
 export const deleteAccountBody = z.object({ password: z.string().min(1) })
 
+export const forgotPasswordBody = z.object({ email: z.email() })
+
+// Same floor as signup: a reset must not be a way around the password policy.
+export const resetPasswordBody = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+})
+
 export const queueOrderBody = z.object({
   verseIds: z.array(z.string().min(1)).min(1),
 })
@@ -63,6 +71,8 @@ export type Credentials = z.infer<typeof credentials>
 export type AttemptInput = z.infer<typeof attemptBody>
 export type ProfilePatch = z.infer<typeof profilePatch>
 export type DeleteAccountInput = z.infer<typeof deleteAccountBody>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordBody>
+export type ResetPasswordInput = z.infer<typeof resetPasswordBody>
 export type QueueOrderInput = z.infer<typeof queueOrderBody>
 export type ThemeInput = z.infer<typeof themeBody>
 export type NextVerseInput = z.infer<typeof nextVerseBody>

@@ -9,6 +9,8 @@ import { userId } from '../middleware/auth'
 import { User } from '../models/User'
 import * as users from '../repositories/userRepository'
 import type { DeleteAccountInput, ProfilePatch } from '../schemas'
+import { assertMailConfigured } from '../services/mailer'
+import { issueResetFor } from '../services/passwordReset'
 import { profileView } from '../views/profileView'
 
 export function show(req: Request) {
@@ -73,4 +75,21 @@ export async function deleteAccount(req: Request, body: DeleteAccountInput) {
 
   users.remove(id)
   return { deleted: true }
+}
+
+/**
+ * Mails a reset link to the address already on file — the signed-in half of the
+ * flow, so nothing is typed and nothing can be typed wrong. Same throttle as
+ * the public route, keyed on the same user, so a signed-in caller can't mail
+ * their own inbox in a loop.
+ */
+export function requestPasswordReset(req: Request) {
+  assertMailConfigured()
+
+  // loadUser already read this row; a missing one is a token that outlived its
+  // account, which is the 404 loadUser deliberately defers to the routes.
+  if (!req.user) throw new NotFoundError('user not found')
+
+  issueResetFor(req.user)
+  return { requested: true }
 }

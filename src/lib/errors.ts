@@ -85,3 +85,15 @@ export class PushNotConfiguredError extends ApiError {
     super('push notifications are not configured', 503)
   }
 }
+
+/**
+ * Same reasoning as PushNotConfiguredError, and deliberately raised *before*
+ * anything looks the address up: it says nothing about whether an account
+ * exists, so the forgot-password route can surface it without becoming an
+ * enumeration oracle.
+ */
+export class MailNotConfiguredError extends ApiError {
+  constructor() {
+    super('email is not configured', 503)
+  }
+}

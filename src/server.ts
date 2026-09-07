@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { createApp } from './app'
 import { migrate } from './db/client'
 import { jwtSecret } from './middleware/auth'
+import { appBaseUrl, mailerConfigured } from './services/mailer'
 import { vapidConfigured, vapidSubject } from './services/vapid'
 import { startReminderScheduler } from './services/reminderScheduler'
 
@@ -24,6 +25,17 @@ if (vapidConfigured()) {
 } else {
   console.warn(
     'VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT not all set — daily reminders are off',
+  )
+}
+
+if (mailerConfigured()) {
+  // Same reason as vapidSubject(): a malformed base URL only shows up as a
+  // reset email pointing at "undefined/reset-password", which nobody reports.
+  appBaseUrl()
+  console.log('password reset emails enabled')
+} else {
+  console.warn(
+    'MAILJET_API_KEY / MAILJET_SECRET_KEY / MAIL_FROM_EMAIL / APP_BASE_URL not all set — password reset is off',
   )
 }
 

@@ -1,6 +1,9 @@
+import jwt from 'jsonwebtoken'
 import request from 'supertest'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { app, initDb, resetDb } from './helpers'
+import { db } from '../src/db/client'
+import { signToken } from '../src/middleware/auth'
+import { app, authed, initDb, resetDb, signup } from './helpers'
 
 beforeAll(() => {
   initDb()
@@ -48,7 +51,33 @@ describe('auth middleware', () => {
     expect(res.status).toBe(401)
     expect(res.body).toEqual({ error: 'invalid token' })
   })
+
+  it('rejects a properly signed token the account has revoked', async () => {
+    const { userId } = await signup()
+    db.prepare('UPDATE users SET token_version = 3 WHERE id = ?').run(userId)
+
+    const res = await authed(signToken(userId, 2)).get('/api/me')
+
+    expect(res.status).toBe(401)
+    expect(res.body).toEqual({ error: 'session expired' })
+  })
+
+  it('accepts a token with no tv claim, as read at version 0', async () => {
+    const { userId } = await signup()
+
+    // What every token issued before the claim existed looks like.
+    const res = await authed(jwtWithoutTv(userId)).get('/api/me')
+
+    expect(res.status).toBe(200)
+  })
 })
+
+/** A token in the pre-token_version shape: `sub` and nothing else. */
+function jwtWithoutTv(userId: string): string {
+  return jwt.sign({ sub: userId }, process.env.JWT_SECRET!, {
+    expiresIn: '30d',
+  })
+}
 
 describe('malformed request bodies', () => {
   it('returns 500 for unparseable JSON (current body-parser error handling)', async () => {

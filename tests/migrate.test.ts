@@ -15,6 +15,7 @@ function emptyDatabase(): void {
   for (const table of [
     'review_schedule',
     'attempt',
+    'password_reset',
     'push_subscription',
     'session_event',
     'session_exercise',
@@ -190,6 +191,46 @@ describe('migrate', () => {
     // Born with the cascade rather than retrofitted, so it is deliberately not
     // in CASCADE_REBUILDS.
     expect(foreignKeyOnDeletes('push_subscription')).toEqual(['CASCADE'])
+  })
+
+  it('adds users.token_version to a database that predates it, at 0', () => {
+    migrate()
+    db.exec('ALTER TABLE users DROP COLUMN token_version')
+    db.prepare(
+      `INSERT INTO users (id, email, password_hash, created_at)
+       VALUES ('u1', 'a@example.com', 'h', '2024-01-01T00:00:00Z')`,
+    ).run()
+
+    migrate()
+
+    // 0 is what requireAuth reads a missing `tv` claim as. If this backfilled
+    // to anything else, the deploy that adds the column would reject every
+    // token already in the wild — and no other test would notice, because
+    // every other test database is built fresh from schema.sql.
+    const row = db.prepare('SELECT token_version FROM users').get() as {
+      token_version: number
+    }
+    expect(row.token_version).toBe(0)
+  })
+
+  it('creates password_reset on a database that predates it', () => {
+    migrate()
+    db.exec('DROP TABLE password_reset')
+
+    migrate()
+
+    expect(columnNames('password_reset')).toEqual(
+      expect.arrayContaining([
+        'user_id',
+        'token_hash',
+        'created_at',
+        'expires_at',
+        'used_at',
+      ]),
+    )
+    // Born with the cascade rather than retrofitted, so it is deliberately not
+    // in CASCADE_REBUILDS.
+    expect(foreignKeyOnDeletes('password_reset')).toEqual(['CASCADE'])
   })
 
   it('creates session_event on a database that predates it', () => {

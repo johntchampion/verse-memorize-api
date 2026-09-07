@@ -23,3 +23,9 @@ meRouter.post(
     res.json(await me.deleteAccount(req, validated(req, deleteAccountBody)))
   },
 )
+
+// The signed-in half of password reset: no body, because the address is the one
+// already on the account.
+meRouter.post('/me/request-password-reset', (req, res) => {
+  res.status(202).json(me.requestPasswordReset(req))
+})

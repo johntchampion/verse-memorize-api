@@ -9,6 +9,8 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string
+      /** The `tv` claim the presented token carried. */
+      tokenVersion?: number
     }
   }
 }
@@ -21,8 +23,15 @@ export function jwtSecret(): string {
   return secret
 }
 
-export function signToken(userId: string): string {
-  return jwt.sign({ sub: userId }, jwtSecret(), { expiresIn: TOKEN_TTL })
+/**
+ * `tokenVersion` has no default on purpose: every caller has to name the value
+ * it is minting against, so a site that forgets can't quietly issue a token
+ * that is already stale for anyone who has ever reset their password.
+ */
+export function signToken(userId: string, tokenVersion: number): string {
+  return jwt.sign({ sub: userId, tv: tokenVersion }, jwtSecret(), {
+    expiresIn: TOKEN_TTL,
+  })
 }
 
 /** Verifies the bearer token and attaches `req.userId`. Guards all /api/*. */
@@ -37,9 +46,11 @@ export function requireAuth(
   }
 
   let sub: unknown
+  let tv: unknown
   try {
     const payload = jwt.verify(header.slice('Bearer '.length), jwtSecret())
     sub = typeof payload === 'string' ? undefined : payload.sub
+    tv = typeof payload === 'string' ? undefined : payload.tv
   } catch {
     throw new UnauthorizedError('invalid token')
   }
@@ -47,6 +58,27 @@ export function requireAuth(
   if (typeof sub !== 'string') throw new UnauthorizedError('invalid token')
 
   req.userId = sub
+  // Anything but a number reads as 0, matching users.token_version's default:
+  // tokens signed before the claim existed stay valid across the deploy.
+  req.tokenVersion = typeof tv === 'number' ? tv : 0
+  next()
+}
+
+/**
+ * Rejects a token the account has since revoked. Mounted after `loadUser`,
+ * whose `users` read it borrows — so revocation costs no extra query.
+ *
+ * A missing user is loadUser's deliberate case and is left alone here: a token
+ * outliving its account is still a 404 from the routes that need the record.
+ */
+export function requireCurrentToken(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
+  if (req.user && req.user.tokenVersion !== (req.tokenVersion ?? 0)) {
+    throw new UnauthorizedError('session expired')
+  }
   next()
 }
 

@@ -14,6 +14,7 @@ export function initDb(): void {
 export function resetDb(): void {
   db.exec(
     `DELETE FROM attempt;
+     DELETE FROM password_reset;
      DELETE FROM push_subscription;
      DELETE FROM session_event;
      DELETE FROM session_exercise;

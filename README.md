@@ -61,12 +61,22 @@ curl -s localhost:3000/api/session/today -H "authorization: Bearer $TOKEN"
 | `VAPID_PUBLIC_KEY`  | no — without it reminders are off             | —                           |
 | `VAPID_PRIVATE_KEY` | no — without it reminders are off             | —                           |
 | `VAPID_SUBJECT`     | with the keys — a real `mailto:` or `https:` contact | —                    |
+| `MAILJET_API_KEY`   | no — without it password reset is off         | —                           |
+| `MAILJET_SECRET_KEY`| no — without it password reset is off         | —                           |
+| `MAIL_FROM_EMAIL`   | with the keys — a verified Mailjet sender     | —                           |
+| `MAIL_FROM_NAME`    | no                                            | `Verse Memorize`            |
+| `APP_BASE_URL`      | with the keys — the origin reset links point at | —                         |
 
 Auth is load-bearing, so a missing `JWT_SECRET` is fatal at boot. Reminders are
 not, so a deployment with **no** VAPID configuration starts anyway: the
 scheduler doesn't run and `/api/push/*` answers `503`, which is what tells the
 client to show the reminder toggle as unavailable rather than broken. See
 [Daily reminders](#daily-reminders).
+
+Password reset works the same way: with no Mailjet configuration the server
+boots and the reset routes answer `503`. `APP_BASE_URL` is validated at boot
+when mail *is* configured, because a malformed one surfaces only as a real email
+pointing at `undefined/reset-password` — see [Password reset](#password-reset).
 
 Configuration that is present but *wrong* does fail at boot. In particular
 `VAPID_SUBJECT` must be a contact address that could actually receive mail:
@@ -355,6 +365,54 @@ row the answer is a string compare against `reminder_last_sent_date`. The
 queries that cost something run once per opted-in user per local day, in the
 minute their reminder comes due.
 
+### Password reset
+
+Two ways in, one flow behind them. A signed-out user asks from the login screen
+(`POST /auth/forgot-password`, with an address); a signed-in user asks from
+Settings (`POST /api/me/request-password-reset`, with no body, since the address
+is already on the account). Both land in
+[`services/passwordReset.ts`](./src/services/passwordReset.ts), so the throttle,
+the expiry and the email body cannot drift apart.
+
+The link is good for **30 minutes** and once. Only the SHA-256 of the token is
+stored, so a leaked database yields nothing that can be mailed to anyone or
+presented to `/auth/reset-password`. Redeeming is a conditional `UPDATE`, not a
+read-then-write, so "unused" and "unexpired" are settled in one statement and
+two simultaneous redemptions cannot both win.
+
+**The public route tells you nothing about who has an account.** It answers `202
+{ requested: true }` for any well-formed address and sends only if one matches.
+That is only half the defence: awaiting a Mailjet round trip for known addresses
+and returning instantly for unknown ones would put the same answer back into the
+response time. So the send is started and deliberately not awaited, and a
+delivery failure is logged rather than raised — by the time it is known, the
+response has gone. A *misconfiguration* is different: `503` is raised before the
+address is looked up, so it leaks nothing, and without it a deployment with no
+credentials would accept resets forever and send none.
+
+One email per account per minute, and both entry points share the key — asking
+from Settings and then from the login page sends one email, not two. Over the
+limit still answers `202`, because a `429` would say the address is registered.
+
+**Completing a reset ends every other session.** `users.token_version` is
+carried in every JWT as `tv`; the reset bumps it, and
+[`requireCurrentToken`](./src/middleware/auth.ts) rejects any token presenting an
+older one with `401 session expired`. The check rides on the `users` row
+[`loadUser`](./src/middleware/loadUser.ts) already reads, so revocation costs no
+extra query and the design stays stateless. The response carries a token minted
+*after* the bump, which is what signs the resetting device back in.
+
+A missing or non-numeric `tv` reads as 0, matching the column's default — so
+tokens issued before the claim existed keep working across the deploy. The
+regression test for that pairing is in
+[`tests/migrate.test.ts`](./tests/migrate.test.ts), and it is the only thing in
+the suite that can catch a missing column migration: every other test database is
+built fresh from `schema.sql`, where the column is always present.
+
+Push subscriptions deliberately survive a reset. A revoked device stops being
+able to call the API but keeps receiving daily reminders; there is no device
+list to make either behaviour legible, so the smaller change wins.
+
 ### Tuning constants
 
 All of these are exported from
@@ -516,6 +574,9 @@ The boundaries are the point:
 | ------- | ----------------------- | ----------------------------------------------- |
 | `POST`  | `/auth/signup`          | Create user, assign slot 1, return JWT          |
 | `POST`  | `/auth/login`           | Return JWT                                      |
+| `POST`  | `/auth/forgot-password` | Email a reset link; `202` whether or not the address is registered |
+| `POST`  | `/auth/reset-password`  | Spend a link, set the password, return a fresh JWT |
+| `POST`  | `/api/me/request-password-reset` | Email a reset link to the address on the account |
 | `GET`   | `/api/session/today`    | Today's resumable exercise queue, or a practice drill |
 | `POST`  | `/api/attempt`          | Record one attempt; returns updated verse state |
 | `POST`  | `/api/session/complete` | Log the session, top up any empty slots         |
@@ -580,6 +641,11 @@ Unsubscribe is scoped to the caller, and `POST /api/push/test` can only ever
 address the caller's own devices; it returns `{ sent, removed, failed }`.
 Turning `remindersEnabled` off leaves the subscriptions in place, so switching
 it back on costs no permission prompt and no re-subscribe.
+
+The three password-reset endpoints all answer `503` on a deployment with no
+Mailjet configuration. `POST /auth/forgot-password` answers `202
+{ requested: true }` for any well-formed address, registered or not, and never
+waits for the send — see [Password reset](#password-reset).
 
 ---
 
@@ -778,6 +844,6 @@ and `tsc` will point at every switch and lookup table that needs the new case.
 
 ### Not built (out of scope for v1)
 
-Multiple verse sets · admin UI for verses · password reset · Postgres migration ·
+Multiple verse sets · admin UI for verses · Postgres migration ·
 per-verse translation overrides · a user-chosen reminder time (the derived rule
 is the feature; an override doubles the stored state, the UI and the tests).

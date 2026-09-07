@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { db } from '../db/client'
 import type { UserRow } from '../db/rows'
+import { NotFoundError } from '../lib/errors'
 
 export interface NewUser {
   email: string
@@ -82,6 +83,28 @@ export function updateSettings(id: string, settings: UserSettings): boolean {
     .prepare(`UPDATE users SET ${assignments.join(', ')} WHERE id = ?`)
     .run(...values, id)
   return result.changes > 0
+}
+
+export function updatePasswordHash(id: string, passwordHash: string): void {
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(
+    passwordHash,
+    id,
+  )
+}
+
+/**
+ * Revokes every token issued so far. Returns the new value rather than making
+ * the caller re-read: signing from a row fetched before the bump would mint a
+ * token that is already stale, so the reset would sign the user straight out.
+ */
+export function bumpTokenVersion(id: string): number {
+  const row = db
+    .prepare(
+      'UPDATE users SET token_version = token_version + 1 WHERE id = ? RETURNING token_version',
+    )
+    .get(id) as { token_version: number } | undefined
+  if (!row) throw new NotFoundError('user not found')
+  return row.token_version
 }
 
 /** Every dependent table is ON DELETE CASCADE, so this is the whole account. */

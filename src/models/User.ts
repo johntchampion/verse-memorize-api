@@ -10,8 +10,8 @@ export class User {
   readonly remindersEnabled: boolean
   readonly createdAt: string
   readonly reminderLastSentDate: string | null
+  readonly tokenVersion: number
   private readonly passwordHash: string
-  /** What the account is stored as, before the catalog has vetted it. */
   private readonly storedTranslation: string
 
   constructor(row: UserRow) {
@@ -21,6 +21,7 @@ export class User {
     this.remindersEnabled = row.reminders_enabled === 1
     this.createdAt = row.created_at
     this.reminderLastSentDate = row.reminder_last_sent_date
+    this.tokenVersion = row.token_version
     this.passwordHash = row.password_hash
     this.storedTranslation = row.translation
   }

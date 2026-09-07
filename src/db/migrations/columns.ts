@@ -27,4 +27,9 @@ export function migrateAddColumns(): void {
   // the column arrived.
   addColumnIfMissing('users', 'reminders_enabled', 'INTEGER NOT NULL DEFAULT 0')
   addColumnIfMissing('users', 'reminder_last_sent_date', 'TEXT')
+
+  // 0 so every token already in the wild keeps verifying: requireAuth reads a
+  // missing `tv` claim as 0 too, and the two have to agree or the deploy that
+  // adds this column signs everyone out.
+  addColumnIfMissing('users', 'token_version', 'INTEGER NOT NULL DEFAULT 0')
 }

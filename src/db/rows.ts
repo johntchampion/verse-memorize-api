@@ -23,6 +23,21 @@ export interface UserRow {
   /** Local date (YYYY-MM-DD) the last daily reminder was claimed for, in this
       user's timezone; NULL until the first one goes out. */
   reminder_last_sent_date: string | null
+  /** Carried in every JWT as `tv`. A password reset bumps it, revoking every
+      token minted before. */
+  token_version: number
+}
+
+/** A reset in flight. `token_hash` is the sha256 of what the email carried —
+    the raw token exists only in that email. */
+export interface PasswordResetRow {
+  id: string
+  user_id: string
+  token_hash: string
+  created_at: string
+  expires_at: string
+  /** Set when redeemed, and when superseded by a newer request. */
+  used_at: string | null
 }
 
 export interface UserVerseRow {

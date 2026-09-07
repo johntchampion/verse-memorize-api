@@ -1,5 +1,7 @@
+import jwt from 'jsonwebtoken'
 import request from 'supertest'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { db } from '../src/db/client'
 import { app, authed, initDb, resetDb, signup, uniqueEmail } from './helpers'
 
 beforeAll(() => {
@@ -9,6 +11,14 @@ beforeAll(() => {
 beforeEach(() => {
   resetDb()
 })
+
+/** The payload of a token this suite was handed. */
+function claims(token: string): { sub: string; tv: number } {
+  return jwt.verify(token, process.env.JWT_SECRET!) as {
+    sub: string
+    tv: number
+  }
+}
 
 describe('POST /auth/signup', () => {
   it('creates a user and returns a usable token', async () => {
@@ -24,6 +34,16 @@ describe('POST /auth/signup', () => {
     const me = await authed(res.body.token).get('/api/me')
     expect(me.status).toBe(200)
     expect(me.body.user.email).toBe(email)
+  })
+
+  it('signs the token at the starting version of the account', async () => {
+    const res = await request(app)
+      .post('/auth/signup')
+      .send({ email: uniqueEmail(), password: 'password123' })
+
+    // users.create leaves token_version to the schema default, so signup has
+    // to mint against the same 0 or the new token is stale on arrival.
+    expect(claims(res.body.token).tv).toBe(0)
   })
 
   it('defaults timezone to UTC and translation to WEB', async () => {
@@ -107,6 +127,23 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(200)
     expect(typeof res.body.token).toBe('string')
     expect(typeof res.body.userId).toBe('string')
+  })
+
+  it('signs the token at the version the account currently holds', async () => {
+    const email = uniqueEmail()
+    const password = 'password123'
+    const { body } = await request(app)
+      .post('/auth/signup')
+      .send({ email, password })
+    db.prepare('UPDATE users SET token_version = 7 WHERE id = ?').run(
+      body.userId,
+    )
+
+    const res = await request(app).post('/auth/login').send({ email, password })
+
+    // Not 0: a login after a reset has to mint against the bumped version, or
+    // signing in would hand back a token that is already revoked.
+    expect(claims(res.body.token).tv).toBe(7)
   })
 
   it('rejects a wrong password', async () => {
