@@ -11,7 +11,8 @@ import type { SessionEventKind } from '../domain/sessionEvent'
 import type { SessionQueue } from '../domain/sessionExercise'
 import type { Stage } from '../domain/stage'
 
-export type ExerciseType = 'tile_fill_blank' | 'type_fill_blank'
+export const EXERCISE_TYPES = ['tile_fill_blank', 'type_fill_blank'] as const
+export type ExerciseType = (typeof EXERCISE_TYPES)[number]
 
 export interface UserRow {
   id: string
