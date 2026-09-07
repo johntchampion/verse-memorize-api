@@ -11,6 +11,8 @@
  * module lets all of them share one answer instead of re-deriving it.
  */
 
+import type { ExerciseType } from '../db/rows'
+
 export type Stage =
   | 'learning_light'
   | 'learning_medium'
@@ -75,4 +77,21 @@ export function browseStatusFor(stage: Stage | undefined): VerseStatus {
     case 'review':
       return 'review'
   }
+}
+
+/**
+ * Blank density and word-choice mode per stage.
+ *
+ * `density` is the fraction of words blanked; tiles vs. typing follows the
+ * same table.
+ */
+export const STAGE_RULES: Record<
+  Stage,
+  { density: number; type: ExerciseType }
+> = {
+  learning_light: { density: 0.18, type: 'tile_fill_blank' },
+  learning_medium: { density: 0.5, type: 'tile_fill_blank' },
+  learning_heavy: { density: 0.8, type: 'tile_fill_blank' },
+  review: { density: 1, type: 'tile_fill_blank' },
+  mastered: { density: 1, type: 'type_fill_blank' },
 }

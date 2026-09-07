@@ -4,10 +4,8 @@ import { db } from '../src/db/client'
 import type { PushSubscriptionRow } from '../src/db/client'
 import { instantForLocalTime } from '../src/lib/dates'
 import type { SendResult } from '../src/services/pushSender'
-import {
-  clearDueCache,
-  runReminderTick,
-} from '../src/services/reminderScheduler'
+import { runReminderTick } from '../src/services/reminderScheduler'
+import { clearDueCache } from '../src/services/reminderSchedule'
 import { initDb, resetDb } from './helpers'
 
 beforeAll(initDb)

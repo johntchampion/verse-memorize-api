@@ -3,16 +3,12 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '../src/db/client'
 import type { PushSubscriptionRow } from '../src/db/client'
 import { app, authed, initDb, resetDb, signup } from './helpers'
-import {
-  REMINDER_TOPIC,
-  resetVapidForTests,
-  vapidSubject,
-} from '../src/services/pushSender'
+import { REMINDER_TOPIC } from '../src/services/pushSender'
+import { vapidSubject } from '../src/services/vapid'
 
 beforeAll(initDb)
 beforeEach(() => {
   resetDb()
-  resetVapidForTests()
 })
 
 const endpoint = 'https://push.example.com/send/abc123'

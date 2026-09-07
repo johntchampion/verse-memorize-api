@@ -1,71 +1,9 @@
-import type { ExerciseType } from '../db/client'
-import type { Stage } from '../domain/stage'
+import type { ExerciseType } from '../db/rows'
+import { CONNECTORS } from '../data/connectors'
 import type { Verse } from '../data/verses'
+import { STAGE_RULES, type Stage } from '../domain/stage'
+import { seededRandom, shuffle, type Random } from '../lib/random'
 import { WORD_PATTERN } from '../lib/words'
-
-/**
- * Blank density and word-choice mode per stage.
- *
- * `density` is the fraction of words blanked; tiles vs. typing follows the
- * same table.
- */
-const STAGE_RULES: Record<Stage, { density: number; type: ExerciseType }> = {
-  learning_light: { density: 0.18, type: 'tile_fill_blank' },
-  learning_medium: { density: 0.5, type: 'tile_fill_blank' },
-  learning_heavy: { density: 0.8, type: 'tile_fill_blank' },
-  review: { density: 1, type: 'tile_fill_blank' },
-  mastered: { density: 1, type: 'type_fill_blank' },
-}
-
-/**
- * Connectors, deprioritised for blanking at low density so that early tiers
- * blank content words instead. No NLP — the bank is small and
- * hardcoded, so a stopword list is enough.
- */
-const CONNECTORS = new Set([
-  'a',
-  'an',
-  'and',
-  'as',
-  'at',
-  'be',
-  'but',
-  'by',
-  'for',
-  'from',
-  'have',
-  'has',
-  'he',
-  'her',
-  'him',
-  'his',
-  'i',
-  'in',
-  'is',
-  'it',
-  'me',
-  'my',
-  'not',
-  'of',
-  'on',
-  'or',
-  'that',
-  'the',
-  'their',
-  'them',
-  'they',
-  'this',
-  'to',
-  'up',
-  'us',
-  'was',
-  'we',
-  'were',
-  'will',
-  'with',
-  'you',
-  'your',
-])
 
 const BLANK = '____'
 
@@ -93,34 +31,6 @@ function tokenize(text: string): Token[] {
         end: match.index + match[0].length,
       }
     })
-}
-
-/** Returns a float in [0, 1), like Math.random but seeded and reproducible. */
-type Random = () => number
-
-/** mulberry32 — small deterministic PRNG so a given seed rebuilds the same exercise. */
-function seededRandom(seed: string): Random {
-  let h = 2166136261
-  for (let i = 0; i < seed.length; i += 1) {
-    h = Math.imul(h ^ seed.charCodeAt(i), 16777619)
-  }
-  let a = h >>> 0
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-function shuffle<T>(items: T[], random: Random): T[] {
-  const out = [...items]
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
 }
 
 /**

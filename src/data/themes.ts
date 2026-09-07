@@ -203,6 +203,14 @@ function validateThemes(): void {
         throw new Error(`theme ${theme.id}: verse "${verseId}" listed twice`)
       }
       seen.add(verseId)
+    }
+  }
+}
+
+/** Builds the reverse index themesForVerse reads. */
+function indexThemes(): void {
+  for (const theme of THEMES) {
+    for (const verseId of theme.verseIds) {
       const list = themesByVerseId.get(verseId)
       if (list) list.push(theme)
       else themesByVerseId.set(verseId, [theme])
@@ -211,3 +219,4 @@ function validateThemes(): void {
 }
 
 validateThemes()
+indexThemes()

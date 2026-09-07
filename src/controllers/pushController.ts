@@ -2,12 +2,8 @@ import type { Request } from 'express'
 import { userId } from '../middleware/auth'
 import * as pushSubscriptions from '../repositories/pushSubscriptionRepository'
 import type { SubscribeInput, UnsubscribeInput } from '../schemas'
-import {
-  assertPushConfigured,
-  DAILY_REMINDER,
-  sendToUser,
-  vapidPublicKey,
-} from '../services/pushSender'
+import { DAILY_REMINDER, sendToUser } from '../services/pushSender'
+import { assertPushConfigured, vapidPublicKey } from '../services/vapid'
 
 /** Diagnostic only, and the column is 255 wide. */
 const USER_AGENT_LIMIT = 255

@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { createApp } from './app'
 import { migrate } from './db/client'
 import { jwtSecret } from './middleware/auth'
-import { vapidConfigured, vapidSubject } from './services/pushSender'
+import { vapidConfigured, vapidSubject } from './services/vapid'
 import { startReminderScheduler } from './services/reminderScheduler'
 
 const PORT = Number(process.env.PORT ?? 3000)
