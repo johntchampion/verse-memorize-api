@@ -11,6 +11,7 @@
  */
 import type { NextFunction, Request, Response } from 'express'
 import { db, type UserRow } from '../db/client'
+import { BadRequestError } from '../lib/errors'
 import { translationFor } from '../lib/translation'
 
 declare global {
@@ -23,7 +24,7 @@ declare global {
 
 export function resolveTranslation(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ): void {
   const user = db
@@ -31,10 +32,7 @@ export function resolveTranslation(
     .get(req.userId) as Pick<UserRow, 'translation'> | undefined
 
   const resolved = translationFor(req, user?.translation)
-  if (!resolved) {
-    res.status(400).json({ error: 'unknown translation' })
-    return
-  }
+  if (!resolved) throw new BadRequestError('unknown translation')
 
   req.translation = resolved
   next()

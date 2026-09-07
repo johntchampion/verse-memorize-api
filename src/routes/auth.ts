@@ -8,7 +8,12 @@ import {
   isTranslation,
   normalizeTranslation,
 } from '../data/verses'
-import { parseBody } from '../lib/http'
+import {
+  BadRequestError,
+  ConflictError,
+  UnauthorizedError,
+} from '../lib/errors'
+import { validate, validated } from '../lib/http'
 import { signToken } from '../middleware/auth'
 import { refillSlots } from '../services/slotRefill'
 
@@ -23,23 +28,17 @@ const credentials = z.object({
 
 export const authRouter = Router()
 
-authRouter.post('/signup', async (req, res) => {
-  const body = parseBody(credentials, req, res)
-  if (!body) return
-
+authRouter.post('/signup', validate(credentials), async (req, res) => {
+  const body = validated(req, credentials)
   const { password, timezone, translation } = body
   const email = body.email.trim().toLowerCase()
 
   if (translation !== undefined && !isTranslation(translation)) {
-    res.status(400).json({ error: 'unknown translation' })
-    return
+    throw new BadRequestError('unknown translation')
   }
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email)
-  if (existing) {
-    res.status(409).json({ error: 'email already registered' })
-    return
-  }
+  if (existing) throw new ConflictError('email already registered')
 
   const id = randomUUID()
   db.prepare(
@@ -60,29 +59,26 @@ authRouter.post('/signup', async (req, res) => {
   res.status(201).json({ token: signToken(id), userId: id })
 })
 
-authRouter.post('/login', async (req, res) => {
-  const parsed = credentials.safeParse(req.body)
-  if (!parsed.success) {
-    // Deliberately terser than signup's 400: login should not describe which
-    // field was wrong.
-    res.status(400).json({ error: 'invalid body' })
-    return
-  }
-  const email = parsed.data.email.trim().toLowerCase()
+// Terse: login must not describe which field was wrong.
+authRouter.post(
+  '/login',
+  validate(credentials, { terse: true }),
+  async (req, res) => {
+    const body = validated(req, credentials)
+    const email = body.email.trim().toLowerCase()
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as
-    UserRow | undefined
-  // Compare against a dummy hash when the user is missing so that a bad email
-  // and a bad password take the same amount of time.
-  const hash =
-    user?.password_hash ??
-    '$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv'
-  const ok = await bcrypt.compare(parsed.data.password, hash)
+    const user = db
+      .prepare('SELECT * FROM users WHERE email = ?')
+      .get(email) as UserRow | undefined
+    // Compare against a dummy hash when the user is missing so that a bad email
+    // and a bad password take the same amount of time.
+    const hash =
+      user?.password_hash ??
+      '$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv'
+    const ok = await bcrypt.compare(body.password, hash)
 
-  if (!user || !ok) {
-    res.status(401).json({ error: 'invalid credentials' })
-    return
-  }
+    if (!user || !ok) throw new UnauthorizedError('invalid credentials')
 
-  res.json({ token: signToken(user.id), userId: user.id })
-})
+    res.json({ token: signToken(user.id), userId: user.id })
+  },
+)

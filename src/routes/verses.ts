@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { db, type AttemptRow } from '../db/client'
 import * as userVerses from '../db/userVerseRepository'
 import { browseStatusFor } from '../domain/stage'
+import { NotFoundError } from '../lib/errors'
 import { legacyUserVerseBody } from '../domain/userVerse'
 import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
@@ -54,10 +55,7 @@ versesRouter.get('/verses/:id', (req, res) => {
   const translationCode = translation(req)
 
   const verse = getVerse(req.params.id, translationCode)
-  if (!verse) {
-    res.status(404).json({ error: 'verse not found' })
-    return
-  }
+  if (!verse) throw new NotFoundError('verse not found')
 
   const progress = userVerses.findByUserAndVerse(id, verse.id)
 

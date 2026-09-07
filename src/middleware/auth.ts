@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
+import { UnauthorizedError } from '../lib/errors'
 
 /** Long-lived because there are no refresh tokens: expiry means a fresh login. */
 const TOKEN_TTL = '30d'
@@ -27,27 +28,26 @@ export function signToken(userId: string): string {
 /** Verifies the bearer token and attaches `req.userId`. Guards all /api/*. */
 export function requireAuth(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ): void {
   const header = req.get('authorization')
   if (!header?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'missing bearer token' })
-    return
+    throw new UnauthorizedError('missing bearer token')
   }
 
+  let sub: unknown
   try {
     const payload = jwt.verify(header.slice('Bearer '.length), jwtSecret())
-    const sub = typeof payload === 'string' ? undefined : payload.sub
-    if (typeof sub !== 'string') {
-      res.status(401).json({ error: 'invalid token' })
-      return
-    }
-    req.userId = sub
-    next()
+    sub = typeof payload === 'string' ? undefined : payload.sub
   } catch {
-    res.status(401).json({ error: 'invalid token' })
+    throw new UnauthorizedError('invalid token')
   }
+
+  if (typeof sub !== 'string') throw new UnauthorizedError('invalid token')
+
+  req.userId = sub
+  next()
 }
 
 /** Narrowing helper for handlers mounted behind `requireAuth`. */

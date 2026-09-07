@@ -21,12 +21,13 @@ export function createApp() {
 
   app.use('/auth', authRouter)
 
-  app.use('/api', requireAuth, sessionRouter)
-  app.use('/api', requireAuth, versesRouter)
-  app.use('/api', requireAuth, queueRouter)
-  app.use('/api', requireAuth, meRouter)
-  app.use('/api', requireAuth, translationsRouter)
-  app.use('/api', requireAuth, pushRouter)
+  app.use('/api', requireAuth)
+  app.use('/api', sessionRouter)
+  app.use('/api', versesRouter)
+  app.use('/api', queueRouter)
+  app.use('/api', meRouter)
+  app.use('/api', translationsRouter)
+  app.use('/api', pushRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'not found' })
@@ -37,7 +38,7 @@ export function createApp() {
     // service can signal a client error by throwing from anywhere and the
     // routes need no try/catch of their own.
     if (err instanceof ApiError) {
-      res.status(err.status).json({ error: err.message })
+      res.status(err.status).json(err.body())
       return
     }
     console.error(err)

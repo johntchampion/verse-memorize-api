@@ -10,7 +10,12 @@ import {
   resolveTranslation,
 } from '../data/verses'
 import { addDays, todayInTimezone } from '../lib/dates'
-import { parseBody } from '../lib/http'
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../lib/errors'
+import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { MAX_SLOTS } from '../services/slotRefill'
 
@@ -100,10 +105,7 @@ function profileFor(id: string) {
 /** Profile, streak and slot state. */
 meRouter.get('/me', (req, res) => {
   const profile = profileFor(userId(req))
-  if (!profile) {
-    res.status(404).json({ error: 'user not found' })
-    return
-  }
+  if (!profile) throw new NotFoundError('user not found')
   res.json(profile)
 })
 
@@ -147,20 +149,15 @@ function isValidTimezone(timezone: string): boolean {
  * place, so switching it back on costs no permission prompt and no
  * re-subscribe — the scheduler gates on this flag, not on having a device.
  */
-meRouter.patch('/me', (req, res) => {
+meRouter.patch('/me', validate(patchBody), (req, res) => {
   const id = userId(req)
-  const body = parseBody(patchBody, req, res)
-  if (!body) return
-
-  const { timezone, translation, remindersEnabled } = body
+  const { timezone, translation, remindersEnabled } = validated(req, patchBody)
 
   if (timezone !== undefined && !isValidTimezone(timezone)) {
-    res.status(400).json({ error: 'unknown timezone' })
-    return
+    throw new BadRequestError('unknown timezone')
   }
   if (translation !== undefined && !isTranslation(translation)) {
-    res.status(400).json({ error: 'unknown translation' })
-    return
+    throw new BadRequestError('unknown translation')
   }
 
   // Only the supplied fields are written, so a partial PATCH leaves the rest
@@ -184,10 +181,7 @@ meRouter.patch('/me', (req, res) => {
   const result = db
     .prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`)
     .run(...values, id)
-  if (result.changes === 0) {
-    res.status(404).json({ error: 'user not found' })
-    return
-  }
+  if (result.changes === 0) throw new NotFoundError('user not found')
 
   res.json(profileFor(id))
 })
@@ -205,24 +199,21 @@ const deleteAccountBody = z.object({ password: z.string().min(1) })
  * push_subscription, and attempt transitively via user_verse) is declared
  * ON DELETE CASCADE in schema.sql, proven by cascadeDelete.test.ts.
  */
-meRouter.post('/me/delete-account', async (req, res) => {
-  const id = userId(req)
-  const body = parseBody(deleteAccountBody, req, res)
-  if (!body) return
+meRouter.post(
+  '/me/delete-account',
+  validate(deleteAccountBody),
+  async (req, res) => {
+    const id = userId(req)
+    const { password } = validated(req, deleteAccountBody)
 
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
-    UserRow | undefined
-  if (!user) {
-    res.status(404).json({ error: 'user not found' })
-    return
-  }
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
+      UserRow | undefined
+    if (!user) throw new NotFoundError('user not found')
 
-  const ok = await bcrypt.compare(body.password, user.password_hash)
-  if (!ok) {
-    res.status(401).json({ error: 'invalid password' })
-    return
-  }
+    const ok = await bcrypt.compare(password, user.password_hash)
+    if (!ok) throw new UnauthorizedError('invalid password')
 
-  db.prepare('DELETE FROM users WHERE id = ?').run(id)
-  res.json({ deleted: true })
-})
+    db.prepare('DELETE FROM users WHERE id = ?').run(id)
+    res.json({ deleted: true })
+  },
+)

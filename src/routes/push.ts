@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import * as pushSubscriptions from '../db/pushSubscriptionRepository'
-import { parseBody } from '../lib/http'
+import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import {
   assertPushConfigured,
@@ -44,9 +44,8 @@ const subscribeBody = z.object({
  * which is the right thing for it to do, since only the browser knows whether
  * its subscription survived — still writes one row.
  */
-pushRouter.post('/push/subscribe', (req, res) => {
-  const body = parseBody(subscribeBody, req, res)
-  if (!body) return
+pushRouter.post('/push/subscribe', validate(subscribeBody), (req, res) => {
+  const body = validated(req, subscribeBody)
 
   pushSubscriptions.upsert({
     userId: userId(req),
@@ -68,9 +67,8 @@ const unsubscribeBody = z.object({ endpoint: z.url().max(2048) })
  * POST rather than DELETE because it needs a body to say which device, and a
  * DELETE body is the sort of thing intermediaries feel free to drop.
  */
-pushRouter.post('/push/unsubscribe', (req, res) => {
-  const body = parseBody(unsubscribeBody, req, res)
-  if (!body) return
+pushRouter.post('/push/unsubscribe', validate(unsubscribeBody), (req, res) => {
+  const body = validated(req, unsubscribeBody)
 
   pushSubscriptions.removeForUser(userId(req), body.endpoint)
   res.json({ subscribed: false })

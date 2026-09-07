@@ -4,7 +4,7 @@ import * as userVerses from '../db/userVerseRepository'
 import { THEMES, themesForVerse } from '../data/themes'
 import { versesInOrder } from '../data/verses'
 import { legacyUserVerseBody } from '../domain/userVerse'
-import { parseBody } from '../lib/http'
+import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
 import {
@@ -71,9 +71,8 @@ queueRouter.get('/queue', (req, res) => {
 const orderBody = z.object({ verseIds: z.array(z.string().min(1)).min(1) })
 
 /** Stores a custom queue order. */
-queueRouter.put('/queue', (req, res) => {
-  const body = parseBody(orderBody, req, res)
-  if (!body) return
+queueRouter.put('/queue', validate(orderBody), (req, res) => {
+  const body = validated(req, orderBody)
 
   const id = userId(req)
   setQueueOrder(id, body.verseIds)
@@ -94,9 +93,8 @@ const themeBody = z.object({ themeId: z.string().min(1) })
  * they keep what they're holding and refill from the new front of the queue
  * one at a time, as verses graduate or get swapped out.
  */
-queueRouter.post('/queue/theme', (req, res) => {
-  const body = parseBody(themeBody, req, res)
-  if (!body) return
+queueRouter.post('/queue/theme', validate(themeBody), (req, res) => {
+  const body = validated(req, themeBody)
 
   const id = userId(req)
   moveThemeToTop(id, body.themeId)
@@ -106,9 +104,8 @@ queueRouter.post('/queue/theme', (req, res) => {
 const nextBody = z.object({ verseId: z.string().min(1) })
 
 /** Moves one verse to the front of the queue — the next-up spot. */
-queueRouter.post('/queue/next', (req, res) => {
-  const body = parseBody(nextBody, req, res)
-  if (!body) return
+queueRouter.post('/queue/next', validate(nextBody), (req, res) => {
+  const body = validated(req, nextBody)
 
   const id = userId(req)
   moveVerseToFront(id, body.verseId)
@@ -124,9 +121,8 @@ const replaceBody = z.object({
  * Puts one verse straight into a chosen slot. The verse stepping aside keeps
  * its progress and rejoins the queue near the front.
  */
-queueRouter.post('/slots/replace', (req, res) => {
-  const body = parseBody(replaceBody, req, res)
-  if (!body) return
+queueRouter.post('/slots/replace', validate(replaceBody), (req, res) => {
+  const body = validated(req, replaceBody)
 
   const id = userId(req)
   const { placed, displaced } = replaceSlot(id, body.verseId, body.slot)

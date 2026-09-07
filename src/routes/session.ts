@@ -13,7 +13,8 @@ import { getVerse } from '../data/verses'
 import { slotEvent } from '../domain/sessionEvent'
 import { legacyUserVerseBody } from '../domain/userVerse'
 import { todayInTimezone } from '../lib/dates'
-import { parseBody } from '../lib/http'
+import { NotFoundError } from '../lib/errors'
+import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
 import {
@@ -136,31 +137,32 @@ const attemptBody = z.object({
  * through a session appends them as it goes, and picks up everything earlier
  * from GET /api/session/today when it resumes.
  */
-sessionRouter.post('/attempt', resolveTranslation, (req, res) => {
-  const id = userId(req)
-  const body = parseBody(attemptBody, req, res)
-  if (!body) return
+sessionRouter.post(
+  '/attempt',
+  resolveTranslation,
+  validate(attemptBody),
+  (req, res) => {
+    const id = userId(req)
+    const body = validated(req, attemptBody)
 
-  const userVerse = userVerses.findByIdForUser(body.userVerseId, id)
-  if (!userVerse) {
-    res.status(404).json({ error: 'user_verse not found' })
-    return
-  }
+    const userVerse = userVerses.findByIdForUser(body.userVerseId, id)
+    if (!userVerse) throw new NotFoundError('user_verse not found')
 
-  const outcome = recordAttempt(
-    userVerse,
-    body.exerciseType,
-    body.correct,
-    timezoneFor(id),
-  )
+    const outcome = recordAttempt(
+      userVerse,
+      body.exerciseType,
+      body.correct,
+      timezoneFor(id),
+    )
 
-  res.json({
-    userVerse: legacyUserVerseBody(outcome.userVerse),
-    graduated: outcome.graduated,
-    slotsFilled: outcome.slotsFilled.map(legacyUserVerseBody),
-    events: sessionEventBodies(outcome.events, translation(req)),
-  })
-})
+    res.json({
+      userVerse: legacyUserVerseBody(outcome.userVerse),
+      graduated: outcome.graduated,
+      slotsFilled: outcome.slotsFilled.map(legacyUserVerseBody),
+      events: sessionEventBodies(outcome.events, translation(req)),
+    })
+  },
+)
 
 /**
  * Marks the daily session complete and tops up any empty slots.

@@ -1,26 +1,37 @@
-/**
- * Request-handling helpers shared by the routes.
- */
-import type { Request, Response } from 'express'
+import type { NextFunction, Request, Response } from 'express'
 import { z } from 'zod'
+import { ValidationError } from './errors'
+
+export interface ValidateOptions {
+  /** Omit `details` from the 400. Login uses this: it must not say which field was wrong. */
+  terse?: boolean
+}
 
 /**
- * Validates a request body against a schema.
- *
- * Returns the parsed data, or null after sending a 400 — so a handler reads
- * `const body = parseBody(...); if (!body) return`. The 400 shape is the one
- * clients already receive: `{ error: 'invalid body', details }`.
+ * Validates the request body against a schema before the handler runs, and
+ * replaces `req.body` with the parsed value — so unknown keys are stripped by
+ * the time anything reads it.
  */
-export function parseBody<T extends z.ZodType>(
+export function validate<T extends z.ZodType>(
   schema: T,
-  req: Request,
-  res: Response,
-): z.infer<T> | null {
-  const parsed = schema.safeParse(req.body)
-  if (parsed.success) return parsed.data
+  options: ValidateOptions = {},
+) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const parsed = schema.safeParse(req.body)
+    if (!parsed.success) {
+      throw new ValidationError(
+        options.terse ? undefined : z.treeifyError(parsed.error),
+      )
+    }
+    req.body = parsed.data
+    next()
+  }
+}
 
-  res
-    .status(400)
-    .json({ error: 'invalid body', details: z.treeifyError(parsed.error) })
-  return null
+/** Reads the body a matching `validate(schema)` already parsed. */
+export function validated<T extends z.ZodType>(
+  req: Request,
+  _schema: T,
+): z.infer<T> {
+  return req.body as z.infer<T>
 }
