@@ -1,33 +1,9 @@
 /**
- * The verse bank. Application data loaded from src/data/translations/*.json at
- * startup, never written to the database — adding a verse or a translation is a
- * code deploy.
- *
- * Each translation file is self-contained: it repeats every verse's `id`,
- * `reference` and `order` alongside its own `text` and `decoys`. That
- * duplication is deliberate — a translation is one file you can read top to
- * bottom — and `validateBank` below is what keeps the copies honest. The
- * translation named by `REFERENCE_TRANSLATION` defines the bank; every other
- * file must agree with it exactly.
- *
- * Invariants the rest of the app relies on:
- *   - `id` is a stable slug and must never change once a user has progress
- *     against it (user_verse.verse_id stores it verbatim). It is also
- *     translation-independent, which is what lets a user switch translations
- *     without losing a streak, a schedule, or a slot.
- *   - `order` is 1..N, unique, contiguous, and identical in every translation.
- *     Slot refill walks it in ascending order to pick the next verse to
- *     activate. This is the curriculum order, independent of where the verse
- *     falls in the Bible.
- *   - `decoys` is a flat pool of 6-10 plausible wrong words, written in the
- *     vocabulary of its own translation, and never containing a word that
- *     appears in that verse's text (it would be a correct tile).
- *   - The reference translation's array is laid out in canonical Bible order
- *     (Genesis through Revelation, chapter/verse ascending within a book) — see
- *     `versesInCanonOrder`. That one file fixes canon order for all of them.
- *
- * A file that breaks any of this throws during module load, which takes the
- * server down at startup rather than serving a half-translated session.
+ * The verse bank, loaded from src/data/translations/*.json at startup and never
+ * written to the database. REFERENCE_TRANSLATION defines it; every other file
+ * must agree exactly, and validateBank throws during module load if one
+ * doesn't — taking the server down rather than serving a half-translated
+ * session. See the README for the invariants each file has to hold.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -58,7 +34,6 @@ const verseSchema = z.object({
 
 const fileSchema = z.array(verseSchema).min(1)
 
-/** A loaded, validated translation with its lookups precomputed. */
 interface Bank {
   meta: TranslationMeta
   byId: Map<string, Verse>
@@ -69,8 +44,7 @@ interface Bank {
 }
 
 function loadFile(meta: TranslationMeta): Verse[] {
-  // Resolved relative to this module so it works from both src/ (tsx) and
-  // dist/ (compiled); the build script copies the JSON alongside.
+  // Relative to this module, so it works from both src/ (tsx) and dist/.
   const file = path.join(__dirname, 'translations', meta.file)
 
   let raw: unknown
@@ -91,14 +65,12 @@ function loadFile(meta: TranslationMeta): Verse[] {
   return parsed.data
 }
 
-/** Keeps a long list of offending ids readable in a startup error. */
 function summarize(ids: string[]): string {
   return ids.length > 10
     ? `${ids.slice(0, 10).join(', ')} (+${ids.length - 10} more)`
     : ids.join(', ')
 }
 
-/** Problems visible from a single file, without reference to any other. */
 function checkFile(verses: Verse[]): string[] {
   const problems: string[] = []
 
@@ -232,11 +204,8 @@ function loadBanks(): Map<string, Bank> {
 
 const BANKS = loadBanks()
 
-/**
- * Falls back to the default rather than throwing: a translation dropped from
- * the catalog leaves accounts pointing at a code with no bank, and that should
- * degrade to WEB rather than 500 on every request.
- */
+/** Falls back rather than throwing: a translation dropped from the catalog
+    should degrade to the default, not 500 on every request. */
 function bankFor(translation: string): Bank {
   return BANKS.get(translation) ?? BANKS.get(DEFAULT_TRANSLATION)!
 }
@@ -248,41 +217,33 @@ export function getVerse(
   return bankFor(translation).byId.get(id)
 }
 
-/** The bank in `order`, ascending — the curriculum sequence. */
 export function versesInOrder(
   translation: string = DEFAULT_TRANSLATION,
 ): Verse[] {
   return [...bankFor(translation).inOrder]
 }
 
-/** The bank in canonical Bible order (Genesis through Revelation). */
 export function versesInCanonOrder(
   translation: string = DEFAULT_TRANSLATION,
 ): Verse[] {
   return [...bankFor(translation).inCanonOrder]
 }
 
-/** Every translation a user may choose, in catalog order. */
 export function listTranslations(): TranslationMeta[] {
   return [...TRANSLATIONS]
 }
 
-/** True when `code` names a translation in the catalog, in any casing. */
 export function isTranslation(code: string): boolean {
   return BANKS.has(code.trim().toUpperCase())
 }
 
-/** The canonical form of a user-supplied code, or undefined if unknown. */
 export function normalizeTranslation(code: string): string | undefined {
   const upper = code.trim().toUpperCase()
   return BANKS.has(upper) ? upper : undefined
 }
 
-/**
- * A stored preference turned into a code that definitely has a bank. Anything
- * unrecognised — including a translation since removed from the catalog —
- * resolves to the default.
- */
+/** Anything unrecognised, including a translation since removed from the
+    catalog, resolves to the default. */
 export function resolveTranslation(stored: string | null | undefined): string {
   return (stored && normalizeTranslation(stored)) || DEFAULT_TRANSLATION
 }

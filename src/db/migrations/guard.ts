@@ -1,10 +1,7 @@
 import { columnExists, tableExists } from '../introspect'
 
-/**
- * Schema that only the pre-rewrite progression model created. Each is reported
- * rather than just the first, so a partially hand-edited file names everything
- * still wrong with it.
- */
+/** Each is reported rather than just the first, so a partially hand-edited
+    file names everything still wrong with it. */
 function preRewriteMarkers(): string[] {
   const markers: string[] = []
   if (tableExists('review_schedule')) markers.push('a review_schedule table')
@@ -17,16 +14,11 @@ function preRewriteMarkers(): string[] {
 }
 
 /**
- * Refuses a database from before the progression rewrite.
- *
  * `CREATE TABLE IF NOT EXISTS` will not reshape the old `user_verse`, so the
- * scheduling columns the app reads would simply never exist and every read
- * would come back missing them. Failing here names the cause; failing later
- * names only a symptom, several layers away.
- *
- * There is no upgrade path: the old model stored a 0-100 strength score and the
- * new one stores streak counters and an interval ladder, and one cannot be
- * derived from the other.
+ * scheduling columns would never exist and every read would come back missing
+ * them. Failing here names the cause; failing later names only a symptom.
+ * There is no upgrade path — a 0-100 strength score cannot be turned into
+ * streak counters and an interval ladder.
  */
 export function rejectPreRewriteDatabase(dbPath: string): void {
   const markers = preRewriteMarkers()

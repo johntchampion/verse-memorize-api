@@ -8,11 +8,8 @@ import { assertPushConfigured, vapidPublicKey } from '../services/vapid'
 /** Diagnostic only, and the column is 255 wide. */
 const USER_AGENT_LIMIT = 255
 
-/**
- * Not a secret, but it sits behind the auth guard like everything else under
- * /api. A 503 here tells the client this deployment has no keys, so the
- * settings toggle renders as unavailable rather than as broken.
- */
+/** A 503 here tells the client this deployment has no keys, so the settings
+    toggle renders as unavailable rather than as broken. */
 export function key() {
   return { publicKey: vapidPublicKey() }
 }
@@ -35,7 +32,6 @@ export function unsubscribe(req: Request, body: UnsubscribeInput) {
   return { subscribed: false }
 }
 
-/** Can only ever address the subscriptions of whoever is calling it. */
 export function test(req: Request) {
   // Up front, so a deployment that cannot send says so with a 503 instead of
   // reporting its own misconfiguration as a failure of every device.

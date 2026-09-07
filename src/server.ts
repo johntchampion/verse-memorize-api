@@ -12,16 +12,12 @@ jwtSecret()
 migrate()
 
 // Started here and not in createApp(): the app is constructed once per test
-// file and again by supertest, and none of those should start a timer.
-//
-// Unlike JWT_SECRET this is not fatal to miss. Auth is load-bearing; reminders
-// are not, so a deployment without VAPID keys boots and simply doesn't remind
-// anyone. Note also that the scheduler assumes a single process — two replicas
-// over one SQLite file would each claim correctly but write for no benefit.
+// file, and none of those should start a timer. The scheduler also assumes a
+// single process — two replicas over one SQLite file would each claim
+// correctly but write for no benefit.
 if (vapidConfigured()) {
   // Checked here rather than on the first send: a bad subject is rejected by
-  // Apple alone, so left to surface at runtime it looks like "Safari is
-  // broken" rather than "this server is misconfigured".
+  // Apple alone, so at runtime it looks like "Safari is broken".
   vapidSubject()
   startReminderScheduler()
   console.log('daily reminders enabled')

@@ -1,12 +1,8 @@
 import type { SessionLogRow } from '../db/rows'
 import { addDays, todayInTimezone } from '../lib/dates'
 
-/**
- * A run of consecutive days with a completed session.
- *
- * completed_at is a UTC instant, so every question about days goes through the
- * user's timezone first — this is the one place that conversion happens.
- */
+/** completed_at is a UTC instant, so every question about days goes through the
+    user's timezone first — this is the one place that conversion happens. */
 export class Streak {
   private readonly days: Set<string>
 

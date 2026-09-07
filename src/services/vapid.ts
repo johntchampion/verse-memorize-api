@@ -1,18 +1,12 @@
 /**
- * VAPID configuration for Web Push.
- *
- * Read at call time rather than module load, the same way middleware/auth.ts
- * reads JWT_SECRET. Reminders are not load-bearing the way auth is, so a
- * deployment with nothing configured still boots: the scheduler doesn't run and
- * the routes answer 503. Configuration that is present but wrong fails at boot
- * instead — half-working is the worst outcome here, because each push service
- * validates a different amount and the ones that don't will happily keep
- * delivering while another silently stops.
+ * Read at call time, so a deployment with nothing configured still boots and
+ * answers 503. Configuration that is present but *wrong* fails at boot instead:
+ * each push service validates a different amount, so half-working means one
+ * silently stops while the others keep delivering.
  */
 import webpush from 'web-push'
 import { PushNotConfiguredError } from '../lib/errors'
 
-/** True when this deployment has a VAPID key pair and a contact subject. */
 export function vapidConfigured(): boolean {
   return Boolean(
     process.env.VAPID_PUBLIC_KEY &&
@@ -22,12 +16,9 @@ export function vapidConfigured(): boolean {
 }
 
 /**
- * RFC 2606 / RFC 6761 reserved names, guaranteed never to resolve.
- *
- * Apple's push service validates the JWT's `sub` and rejects an unroutable one
- * with `403 {"reason":"BadJwtToken"}`. Mozilla and Google don't check, so a
- * placeholder subject produces a deployment where Firefox and Chrome work,
- * Safari silently doesn't, and the only clue is a status code on the server.
+ * RFC 2606 / 6761 reserved names. Apple validates the JWT's `sub` and rejects an
+ * unroutable one with `403 {"reason":"BadJwtToken"}`; Mozilla and Google don't
+ * check — so a placeholder gives you a deployment where Safari silently fails.
  */
 const UNROUTABLE = /\.(invalid|example|test|localhost)$/i
 
@@ -39,13 +30,7 @@ function hostOf(subject: string): string | null {
   return null
 }
 
-/**
- * The contact address the push services use to reach whoever runs this server.
- *
- * Required rather than defaulted: there is no generic value that works, so a
- * default could only be a placeholder, and a placeholder here breaks Apple
- * alone.
- */
+/** Any default could only be a placeholder, which breaks Apple alone. */
 export function vapidSubject(): string {
   const subject = process.env.VAPID_SUBJECT
   if (!subject) throw new PushNotConfiguredError()
@@ -67,14 +52,10 @@ export function vapidSubject(): string {
 }
 
 /**
- * The public half of the key pair, which the browser needs as
- * `applicationServerKey` when it subscribes.
- *
  * Never rotate this in a live deployment. A push service rejects a message
  * signed by a key that doesn't match the one the client subscribed with, so a
  * rotation silently invalidates every existing subscription: 403s in the log,
- * nothing in the UI, and every user having to re-enable a toggle they have no
- * reason to touch.
+ * nothing in the UI, and every user having to re-enable a toggle.
  */
 export function vapidPublicKey(): string {
   const key = process.env.VAPID_PUBLIC_KEY
@@ -88,11 +69,8 @@ function vapidPrivateKey(): string {
   return key
 }
 
-/**
- * web-push keeps VAPID details in module state, so this memoizes on the values
- * themselves rather than on a boolean: changing the environment reconfigures
- * instead of silently keeping the old credentials.
- */
+/** Memoized on the values, not a boolean: changing the environment reconfigures
+    instead of silently keeping the old credentials. */
 let configuredWith: string | null = null
 
 export function configureVapid(): void {
@@ -107,13 +85,9 @@ export function configureVapid(): void {
   configuredWith = identity
 }
 
-/**
- * Fails unless this deployment can actually send.
- *
- * Callers that own a status code should use this before fanning out, because
- * sendToUser deliberately turns a per-device failure into a tally rather than
- * an error — which would report one misconfiguration as N dead devices.
- */
+/** Callers that own a status code use this before fanning out: sendToUser
+    tallies per-device failures, reporting one misconfiguration as N dead
+    devices. */
 export function assertPushConfigured(): void {
   vapidPublicKey()
   vapidSubject()

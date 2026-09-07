@@ -33,14 +33,8 @@ function tokenize(text: string): Token[] {
     })
 }
 
-/**
- * Picks which token indexes to blank.
- *
- * Content words are drawn before connectors, so a light-density exercise blanks
- * meaning-bearing words and a heavy one ends up blanking nearly everything
- * regardless. At density 1 every word goes; below that at least one anchor word
- * is always left visible.
- */
+/** Content words before connectors, so a light exercise blanks meaning-bearing
+    words. At density 1 every word goes; below that one anchor stays visible. */
 function chooseBlanks(
   tokens: Token[],
   density: number,

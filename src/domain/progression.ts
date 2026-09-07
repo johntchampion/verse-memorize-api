@@ -1,21 +1,7 @@
 /**
- * How one answered exercise moves a verse.
- *
- * Everything here is pure: given a verse's current progress and an answer, it
- * returns the progress that should replace it. No database, no clock, no
- * refill. `today` and `now` are passed in precisely so these rules can be
- * exercised on any date without waiting for one — see tests/progression.test.ts.
- *
- * Three regimes, one per stage family:
- *   - learning tiers advance on same-day answer streaks, capped at one tier
- *     change per verse per day, and graduate off the top;
- *   - review walks an interval ladder and, on repeated misses, drops out of
- *     scheduling entirely to wait for a learning slot, moving at most once per
- *     due date;
- *   - mastered is the ceiling, and a single miss costs it.
- *
- * Side effects the caller must perform are reported in the Transition rather
- * than done here, which is what keeps these functions testable in isolation.
+ * How one answered exercise moves a verse. Pure: progress and an answer in,
+ * the progress that should replace it out. Side effects the caller must perform
+ * are reported in the Transition rather than done here.
  */
 import { addDays } from '../lib/dates'
 import {
@@ -26,35 +12,21 @@ import {
 import type { VerseProgress } from '../models/UserVerse'
 
 // Tuning constants. Change these here, not at the call sites.
-
-/** Consecutive correct completions needed to advance a learning tier. */
 export const TIER_ADVANCE_THRESHOLD = 3
-
-/** Consecutive misses that drop a verse back a learning tier. */
 export const TIER_DOWNGRADE_THRESHOLD = 2
-
-/** Consecutive correct reviews needed to step the interval up a rung. */
 export const REVIEW_ADVANCE_THRESHOLD = 3
-
-/** Consecutive missed reviews that pull a verse back into a learning slot. */
 export const REVIEW_DEMOTION_THRESHOLD = 2
-
-/** Review interval ladder, in days. */
 export const INTERVAL_PROGRESSION = [1, 3, 7, 14, 30] as const
 export const MAX_INTERVAL_DAYS =
   INTERVAL_PROGRESSION[INTERVAL_PROGRESSION.length - 1]
 
-/** The next rung up the interval ladder, capped at the top. */
 function nextInterval(current: number): number {
   return (
     INTERVAL_PROGRESSION.find((days) => days > current) ?? MAX_INTERVAL_DAYS
   )
 }
 
-/**
- * The result of one attempt: the progress to save, plus the follow-up work the
- * caller owns because it reaches outside this module.
- */
+/** The progress to save, plus the follow-up work the caller owns. */
 export interface Transition {
   next: VerseProgress
   /** This attempt graduated the verse out of learning_heavy. */
@@ -75,13 +47,9 @@ function tierChangeSpentToday(progress: VerseProgress, today: string): boolean {
   )
 }
 
-/**
- * Whether the schedule is actually asking for this verse today.
- *
- * A null due date means unscheduled — a verse waiting for a learning slot —
- * which is never due. Also the predicate that decides what goes into a day's
- * session, so the schedule advances exactly when the verse was scheduled.
- */
+/** Null means unscheduled — a verse waiting for a slot — which is never due.
+    Also decides what goes into a day, so the schedule advances exactly when the
+    verse was scheduled. */
 export function isDue(
   progress: Pick<VerseProgress, 'dueAt'>,
   today: string,
@@ -89,12 +57,10 @@ export function isDue(
   return progress.dueAt !== null && progress.dueAt <= today
 }
 
-/** The attempt happened, but nothing about the verse's schedule moves. */
 function unchanged(progress: VerseProgress): Transition {
   return unchangedExcept({ ...progress })
 }
 
-/** A moved verse that asks nothing of the caller. */
 function unchangedExcept(next: VerseProgress): Transition {
   return { next, graduated: false, needsRefill: false, bumpRelearning: false }
 }
@@ -275,17 +241,11 @@ function reviewMiss(
 }
 
 /**
- * Dispatches to the regime the verse is currently in.
- *
- * The two scheduled regimes move once per due date, not once per exercise:
- * every counted branch of advanceReview and advanceMastered pushes due_at past
- * today (or unschedules the verse outright), so the isDue guard at the top of
- * each turns every further answer that day into plain practice. Three drills of
- * a one-day verse must not buy three days of interval, and a verse that
- * graduated into review this morning must not collect review credit from the
- * learning repetitions still queued behind it. Learning tiers are deliberately
- * not gated this way — they are meant to be drilled several times a day, and
- * they have their own one-change-per-day cap.
+ * The scheduled regimes move once per due date, not once per exercise: every
+ * counted branch pushes due_at past today, so the isDue guard turns further
+ * answers that day into plain practice. Three drills of a one-day verse must
+ * not buy three days of interval. Learning tiers are deliberately not gated
+ * this way — they are meant to be drilled several times a day.
  */
 export function advance(
   progress: VerseProgress,

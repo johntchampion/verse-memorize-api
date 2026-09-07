@@ -6,12 +6,8 @@ import { renderExercise, type SessionExercise } from './SessionExercise'
 const INSTANCE_RANGE = 1_000_000
 
 /**
- * A short drill: one exercise per verse currently in a learning slot.
- *
- * Practice outside the day's lesson, so it neither reads nor writes the day's
- * plan and nothing here counts toward finishing the session. It tracks the
- * slots as they stand right now, which is where a slot change shows up
- * immediately.
+ * One exercise per slotted verse, outside the day's lesson: it neither reads nor
+ * writes the day's plan, and it tracks the slots as they stand right now.
  */
 export class PracticeDrill {
   constructor(private readonly userId: string) {}
@@ -19,8 +15,6 @@ export class PracticeDrill {
   exercises(translation: string = DEFAULT_TRANSLATION): SessionExercise[] {
     const drill: SessionExercise[] = []
 
-    // slottedForUser orders by slot, so the order is stable within a call even
-    // though the blanks are not.
     for (const verse of userVerses.slottedForUser(this.userId)) {
       const exercise = renderExercise({
         verse,

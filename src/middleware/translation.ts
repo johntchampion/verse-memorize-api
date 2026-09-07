@@ -1,13 +1,7 @@
 /**
- * Resolves the translation a request should be served in, once, and attaches it
- * to the request — the same shape as `requireAuth` attaching `req.userId`.
- *
- * `?translation=` overrides the account preference as a preview; it never
- * writes back, so a client can show a verse in another translation without
- * committing the user to it. An override naming a translation that does not
- * exist is a client error and 400s here, which is why every route behind this
- * middleware can assume `translation(req)` is a real bank. An unrecognised
- * *stored* value is not the caller's fault and falls back to the default.
+ * `?translation=` overrides the account preference as a preview; it never writes
+ * back. An override naming a translation that does not exist 400s here, which is
+ * why every route behind this can assume `translation(req)` is a real bank.
  */
 import type { NextFunction, Request, Response } from 'express'
 import { BadRequestError } from '../lib/errors'

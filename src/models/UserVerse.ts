@@ -3,12 +3,9 @@ import { isDue } from '../domain/progression'
 import { isLearningStage, isReviewStage, type Stage } from '../domain/stage'
 
 /**
- * One user's progress against one verse.
- *
- * A verse is only ever in one regime at a time, which is why the learning
- * fields and the review fields share one model: `slot` and `streakDate` are
- * populated while learning, `intervalDays` and `dueAt` while reviewing, and
- * each is null in the other regime.
+ * A verse is only ever in one regime at a time, which is why the learning and
+ * review fields share one model: `slot` and `streakDate` while learning,
+ * `intervalDays` and `dueAt` while reviewing, each null in the other.
  */
 export interface UserVerseFields {
   id: string
@@ -18,10 +15,7 @@ export interface UserVerseFields {
 
   consecutiveCorrect: number
   consecutiveIncorrect: number
-  /**
-   * Local date `consecutiveCorrect` was accrued on. Learning stages only,
-   * where the run has to land inside a single calendar day to count.
-   */
+  /** Learning stages only: the run has to land inside one calendar day. */
   streakDate: string | null
 
   intervalDays: number | null
@@ -105,21 +99,16 @@ export class UserVerse {
     return isReviewStage(this.stage)
   }
 
-  /** An answer only moves a review's schedule on or after its due date. */
   isDue(today: string): boolean {
     return isDue(this, today)
   }
 
-  /** The one-tier-change-per-day cap, already spent. */
   tierChangeUsedToday(today: string): boolean {
     return this.lastUpgradeDate === today || this.lastDowngradeDate === today
   }
 
-  /**
-   * The v1 wire shape: a raw `user_verse` row, snake_case, with
-   * `needs_relearning` as 0/1. Two endpoints have always serialized the row
-   * directly, so clients depend on this exact shape.
-   */
+  /** The v1 wire shape: the raw row, snake_case, `needs_relearning` as 0/1.
+      Clients have always received it this way. */
   toLegacyBody(): UserVerseRow {
     return {
       id: this.id,

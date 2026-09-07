@@ -11,13 +11,9 @@ declare global {
 }
 
 /**
- * Reads the caller's row once per request and attaches it, so the handlers
- * behind it share one lookup instead of querying `users` for a timezone here
- * and a translation there.
- *
- * A missing user is left undefined rather than rejected: a token outliving its
- * account is a 404 from the routes that need the record and a harmless default
- * everywhere else, which is the behaviour the endpoints already had.
+ * One `users` read per request, shared by everything behind it. A missing user
+ * is left undefined rather than rejected: a token outliving its account is a
+ * 404 from the routes that need the record and a harmless default elsewhere.
  */
 export function loadUser(
   req: Request,

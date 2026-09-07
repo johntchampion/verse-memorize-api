@@ -1,4 +1,3 @@
-/** Delivering a Web Push message to a user's devices. */
 import webpush, { WebPushError } from 'web-push'
 import type { PushSubscriptionRow } from '../db/client'
 import * as pushSubscriptions from '../repositories/pushSubscriptionRepository'
@@ -37,7 +36,6 @@ export type SendResult =
   | 'sent'
   /** The push service says this endpoint is dead; the row should go. */
   | 'gone'
-  /** Something else went wrong; the endpoint may still be good. */
   | 'failed'
 
 /** An hour: a reminder that surfaces six hours late is noise. */
@@ -93,7 +91,6 @@ function classifyFailure(err: unknown, subscriptionId: string): SendResult {
 
 export interface FanOutResult {
   sent: number
-  /** Endpoints the push service reported dead, now deleted. */
   removed: number
   failed: number
 }
@@ -103,10 +100,7 @@ export type Sender = (
   payload: ReminderPayload,
 ) => Promise<SendResult>
 
-/**
- * Sends one payload to every device the user has registered, in parallel — one
- * dead endpoint must not abort the others.
- */
+/** In parallel: one dead endpoint must not abort the others. */
 export async function sendToUser(
   userId: string,
   payload: ReminderPayload,

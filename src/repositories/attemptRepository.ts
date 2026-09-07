@@ -43,13 +43,9 @@ function instant(sql: string, ...params: unknown[]): string | null {
   return row?.at ?? null
 }
 
-/**
- * The user's most recent attempt in `[sinceIso, beforeIso)`, or null.
- *
- * This is how the reminder finds its anchor day: "the most recent prior day on
- * which they attempted anything" is, by definition, the day their most recent
- * prior attempt fell on — so one MAX answers it and no grouping is needed.
- */
+/** How the reminder finds its anchor day: the most recent prior day they
+    attempted anything is the day their most recent prior attempt fell on, so
+    one MAX answers it and no grouping is needed. */
 export function lastAttemptBefore(
   userId: string,
   range: { since: string; before: string },
@@ -67,7 +63,6 @@ export function lastAttemptBefore(
   )
 }
 
-/** The user's first attempt in `[fromIso, toIso)` — one local day's worth. */
 export function firstAttemptBetween(
   userId: string,
   fromIso: string,
@@ -86,11 +81,8 @@ export function firstAttemptBetween(
   )
 }
 
-/**
- * The user's most recent attempt at or after `sinceIso`. Bounded to the last
- * few minutes by its only caller, which uses it to tell whether someone is
- * mid-session right now.
- */
+/** Bounded to the last few minutes by its only caller, which uses it to tell
+    whether someone is mid-session right now. */
 export function lastAttemptSince(
   userId: string,
   sinceIso: string,

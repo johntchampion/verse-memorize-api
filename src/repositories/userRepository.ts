@@ -17,7 +17,6 @@ export interface UserSettings {
   remindersEnabled?: boolean
 }
 
-/** A user opted in to reminders with at least one device to send to. */
 export interface ReminderCandidateRow {
   id: string
   timezone: string

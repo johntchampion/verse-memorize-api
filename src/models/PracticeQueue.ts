@@ -6,30 +6,22 @@ import * as userVerses from '../repositories/userVerseRepository'
 import type { UserVerse } from './UserVerse'
 
 /**
- * Every verse the user hasn't memorized and isn't holding in a slot, in the
- * order slot refill will consume them.
- *
- * Membership is derived, never stored. Only the *order* persists, and ids in it
- * that aren't currently queued are skipped on read while queued verses missing
- * from it are merged back in — so a stored order is self-healing: it never
- * blocks a verse from surfacing, and slotting or graduating needs no queue
- * bookkeeping.
+ * Every verse the user hasn't memorized and isn't holding in a slot, in refill
+ * order. Membership is derived, never stored; only the order persists, and it
+ * is self-healing — unqueued ids are skipped on read and missing ones merged
+ * back in, so slotting or graduating needs no queue bookkeeping.
  */
 export class PracticeQueue {
   constructor(private readonly userId: string) {}
 
-  /** A verse with no row yet has never been started, so it is queued. */
   static isQueued(verse: UserVerse | undefined): boolean {
     if (!verse) return true
     if (verse.needsRelearning) return true
     return verse.isLearning && verse.slot === null
   }
 
-  /**
-   * Whether a queued verse has been worked on before — swapped out of a slot,
-   * or dropped back for relearning. Having a row at all is what distinguishes
-   * the two, since the row is created the moment a verse is first slotted.
-   */
+  /** Having a row at all is the distinction: it is created the moment a verse
+      is first slotted. */
   static hasSavedProgress(verse: UserVerse | undefined): boolean {
     return verse !== undefined
   }
@@ -39,10 +31,10 @@ export class PracticeQueue {
   }
 
   /**
-   * Front first. The default order is the curriculum with in-progress verses
-   * ahead of untouched ones; a custom order is respected verbatim for the ids
-   * it covers, and verses it doesn't mention join at the front when they carry
-   * progress and at the back when they are new to the bank.
+   * Front first. Default order is the curriculum with in-progress verses ahead
+   * of untouched ones. A custom order is respected verbatim for the ids it
+   * covers; verses it omits join at the front when they carry progress and at
+   * the back when they are new.
    */
   get verseIds(): string[] {
     const byVerseId = userVerses.byVerseIdForUser(this.userId)
@@ -71,17 +63,12 @@ export class PracticeQueue {
     ]
   }
 
-  /** 1 = next up, or null when the verse isn't queued. */
   positionOf(verseId: string): number | null {
     const index = this.verseIds.indexOf(verseId)
     return index === -1 ? null : index + 1
   }
 
-  /**
-   * Stores a custom order. The ids must all be real bank verses with no
-   * duplicates; they need not cover the whole queue, so a slightly stale client
-   * cannot corrupt anything.
-   */
+  /** Need not cover the whole queue, so a stale client cannot corrupt it. */
   setOrder(verseIds: string[]): void {
     const bankIds = new Set(versesInOrder().map((verse) => verse.id))
     const seen = new Set<string>()
@@ -97,7 +84,6 @@ export class PracticeQueue {
     queueOrder.remove(this.userId)
   }
 
-  /** The theme's own reading order at the front; everything else keeps its place. */
   moveThemeToTop(themeId: string): void {
     const theme = getTheme(themeId)
     if (!theme) throw new QueueError(`unknown theme "${themeId}"`)
@@ -118,10 +104,9 @@ export class PracticeQueue {
   }
 
   /**
-   * A one-time nudge when a verse drops into relearning, not a standing rule:
-   * it becomes an ordinary entry afterwards, free to be moved like anything
-   * else. A no-op without a custom order, since the default already surfaces
-   * relearners at the front on every read.
+   * A one-time nudge, not a standing rule — it becomes an ordinary entry
+   * afterwards. A no-op without a custom order, since the default already
+   * surfaces relearners at the front on every read.
    */
   bumpRelearningToFront(verseId: string): void {
     const stored = queueOrder.read(this.userId)

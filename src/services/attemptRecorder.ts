@@ -17,10 +17,7 @@ export interface AttemptOutcome {
   graduated: boolean
   /** Verses slotted by the refill this attempt triggered — new or relearning. */
   slotsFilled: UserVerse[]
-  /**
-   * Just this attempt's events, not the day's: a client stepping through a
-   * session appends as it goes and picks the rest up on resume.
-   */
+  /** This attempt's events, not the day's. */
   events: SessionEventRow[]
 }
 
@@ -30,13 +27,8 @@ interface Context {
   now: string
 }
 
-/**
- * Records one exercise attempt and applies its consequences.
- *
- * The rules live in domain/progression.ts, which is pure; this is the part that
- * touches the world. Wrapped in a transaction so a tier change and the slot
- * refill it triggers cannot half-apply.
- */
+/** Wrapped in a transaction so a tier change and the slot refill it triggers
+    cannot half-apply. */
 export const recordAttempt = db.transaction(
   (
     verse: UserVerse,
@@ -76,9 +68,7 @@ function applyProgression(context: Context, correct: boolean): Transition {
 
   // Before the progress is saved, so the plan is built from the state that made
   // this exercise due: a graduating verse would otherwise be dropped from the
-  // day's plan by the very attempt that graduated it. Here rather than only in
-  // the session route, so a client that answers without fetching the session
-  // first still ticks items off.
+  // day's plan by the very attempt that graduated it.
   const session = new DailySession(verse.userId, today)
   session.ensurePlan()
 

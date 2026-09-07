@@ -4,13 +4,8 @@ interface ForeignKeyListRow {
   on_delete: string
 }
 
-/**
- * True once every foreign key on `table` cascades on delete. False for a
- * table with no declared foreign keys — none of the six tables
- * migrateAddCascadeDeletes() checks should ever hit that branch, but treating
- * it as "not done" rather than silently skipping is the safer failure mode if
- * a typo ever creeps into CASCADE_REBUILDS.
- */
+/** False for a table with no declared foreign keys: treating that as "not done"
+    is the safer failure mode if a typo creeps into CASCADE_REBUILDS. */
 function hasCascadeDeletes(table: string): boolean {
   const fks = db
     .prepare(`PRAGMA foreign_key_list(${table})`)
@@ -20,11 +15,10 @@ function hasCascadeDeletes(table: string): boolean {
 
 interface CascadeRebuild {
   table: string
-  /** CREATE TABLE statement for `${table}_new`, with ON DELETE CASCADE. */
+  /** CREATE TABLE for `${table}_new`, with ON DELETE CASCADE. */
   createNew: string
-  /** Full, ordered column list used for the INSERT ... SELECT. */
   columns: string[]
-  /** Indexes to reapply after the rename — DROP TABLE also drops them. */
+  /** Reapplied after the rename — DROP TABLE also drops them. */
   indexes: string[]
 }
 
@@ -194,19 +188,15 @@ function rebuildWithCascade({
 }
 
 /**
- * Adds ON DELETE CASCADE to every foreign key. SQLite cannot ALTER a foreign
- * key's ON DELETE clause in place, so an existing table is rebuilt: a shadow
- * table with the cascading constraint, rows copied across, then swapped in
- * under the original name.
+ * SQLite cannot ALTER a foreign key's ON DELETE clause, so each table is
+ * rebuilt and swapped in. Runs after the column migrations, which normalize
+ * every table to its full column set so the column lists line up on both sides
+ * of the INSERT however old the file is.
  *
- * Runs after the column migrations on purpose: those normalize each table to
- * its full column set first, so the explicit column lists line up on both
- * sides of the INSERT however old the file being migrated is.
- *
- * foreign_keys must be off for all of it: SQLite refuses to DROP a table that
- * is an active FK target while enforcement is on, and each of these six is a
- * target for another. The pragma is a documented no-op inside a transaction,
- * so it is toggled outside the transaction, not inside.
+ * foreign_keys must be off throughout: SQLite refuses to DROP a table that is
+ * an active FK target while enforcement is on, and each of these six is a
+ * target for another. The pragma is a documented no-op inside a transaction, so
+ * it is toggled outside it.
  */
 export function migrateAddCascadeDeletes(): void {
   const pending = CASCADE_REBUILDS.filter((r) => !hasCascadeDeletes(r.table))

@@ -3,17 +3,8 @@ import { db } from '../db/client'
 import type { SessionEventRow } from '../db/rows'
 import type { NewSessionEvent } from '../domain/sessionEvent'
 
-/**
- * Every session_event query. Like the other repositories here, statements are
- * prepared per call rather than at module load: this module is imported before
- * migrate() has created the table.
- */
-
-/**
- * Records one event against a user's day and hands back the row it wrote, so a
- * caller that has to report what it just did doesn't have to read the day back
- * and work out which rows are new.
- */
+/** Hands back the row it wrote, so a caller reporting what it just did doesn't
+    have to read the day back and work out which rows are new. */
 export function record(
   userId: string,
   date: string,
@@ -55,12 +46,10 @@ export function record(
 }
 
 /**
- * A day's events, oldest first.
- *
  * Ordered by rowid after the timestamp because an attempt writes its own event
  * and any slot events it triggered inside one transaction, sharing a
  * `created_at` to the millisecond — insertion order is the only thing that
- * separates them, and it is the order they should be read back in.
+ * separates them.
  */
 export function forDay(userId: string, date: string): SessionEventRow[] {
   return db
@@ -72,7 +61,6 @@ export function forDay(userId: string, date: string): SessionEventRow[] {
     .all(userId, date) as SessionEventRow[]
 }
 
-/** Drops a user's finished days, alongside the plans they belong to. */
 export function pruneBefore(userId: string, date: string): void {
   db.prepare(
     'DELETE FROM session_event WHERE user_id = ? AND session_date < ?',

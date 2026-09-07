@@ -1,42 +1,24 @@
 /**
- * What moved, said once, so every reader says the same thing about it.
- *
- * The completion screen recaps a session: which verses climbed a tier, which
- * graduated, which slipped, and which took a newly empty slot. That recap used
- * to be assembled in the client by comparing the stage it had cached against
- * the one an attempt came back with. Two things were wrong with that. It could
- * only remember the current sitting, so a session resumed after a quit lost
- * everything earned before it; and the cached stage went stale the moment a
- * verse upgraded, because the same verse is drilled three times a day and the
- * two remaining repetitions still held the old value, re-reporting a move that
- * had already happened.
- *
- * So the classification happens here instead, against the row as it actually
- * stands, and the result is recorded. Pure, like progression.ts: the caller
- * owns the writing.
+ * Classifying what an attempt moved, for the completion screen's recap.
+ * Pure, like progression.ts: the caller owns the writing.
  */
-import { LEARNING_STAGES, type Stage } from './stage'
+import { isLearningStage, LEARNING_STAGES, type Stage } from './stage'
 import type { Transition } from './progression'
 import type { UserVerse } from '../models/UserVerse'
 
 export type SessionEventKind =
-  /** Climbed or slipped a learning tier. */
   | 'tier_up'
   | 'tier_down'
-  /** Off the top of the learning ladder and into review. */
   | 'graduated'
-  /** Review's ceiling, reached and lost. */
   | 'mastered'
   | 'lost_mastery'
   /** Out of review and straight back into a slot, because one was free. */
   | 'demoted_to_learning'
   /** Slipped twice in review with no slot free: unscheduled, waiting. */
   | 'relearning_queued'
-  /** A slot filled from the queue — a verse arriving, or one coming back. */
   | 'slot_filled'
   | 'slot_returned'
 
-/** What a caller hands the repository to record. */
 export interface NewSessionEvent {
   kind: SessionEventKind
   userVerseId: string
@@ -44,10 +26,6 @@ export interface NewSessionEvent {
   stageFrom: Stage | null
   stageTo: Stage | null
   slot: number | null
-}
-
-function isLearningTier(stage: Stage): boolean {
-  return (LEARNING_STAGES as readonly Stage[]).includes(stage)
 }
 
 /**
@@ -71,11 +49,9 @@ export function attemptEventKind(
   if (after.needsRelearning) return 'relearning_queued'
   if (from === to) return null
 
-  if (isLearningTier(from) && isLearningTier(to)) {
-    const climbed =
-      (LEARNING_STAGES as readonly Stage[]).indexOf(to) >
-      (LEARNING_STAGES as readonly Stage[]).indexOf(from)
-    return climbed ? 'tier_up' : 'tier_down'
+  if (isLearningStage(from) && isLearningStage(to)) {
+    const tiers = LEARNING_STAGES as readonly Stage[]
+    return tiers.indexOf(to) > tiers.indexOf(from) ? 'tier_up' : 'tier_down'
   }
 
   // The transition already knows which of the two ways into review this was;

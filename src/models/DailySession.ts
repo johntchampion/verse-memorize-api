@@ -7,19 +7,13 @@ import type { NewPlanItem } from '../repositories/sessionExerciseRepository'
 import * as userVerses from '../repositories/userVerseRepository'
 import { renderExercise, type SessionExercise } from './SessionExercise'
 
-/**
- * Exercise instances generated per learning verse per session. 2-3 is the
- * intended range — repeating a verse within one session is deliberate.
- */
+/** Repeating a verse within one session is deliberate; 2-3 is the range. */
 export const EXERCISES_PER_LEARNING_VERSE = 3
 
 /**
- * One user's plan for one local day.
- *
- * The day's work is settled the first time the day is touched and nothing
- * afterwards adds to it or takes from it: a verse that graduates mid-session
- * stays in the list and the verse refilling its slot waits for tomorrow. That
- * is what lets a client that quit resume into the list it left.
+ * The day's work is settled the first time the day is touched and nothing after
+ * adds to or removes from it — which is what lets a client that quit resume
+ * into the list it left.
  */
 export class DailySession {
   constructor(
@@ -27,17 +21,12 @@ export class DailySession {
     private readonly date: string,
   ) {}
 
-  /**
-   * Today's plan, written once on first use. A day whose desired set comes out
-   * empty writes nothing, so it is planned again on the next call rather than
-   * frozen empty — a user with nothing due at midnight still gets a session
-   * once a slot is filled.
-   */
+  /** A day whose desired set is empty writes nothing, so it is planned again
+      next call rather than frozen empty. */
   ensurePlan(): PlannedExercise[] {
     return ensurePlanTransaction(this.userId, this.date)
   }
 
-  /** The day's exercises, rendered at the stage each was planned at. */
   exercises(translation: string = DEFAULT_TRANSLATION): SessionExercise[] {
     const plan = this.ensurePlan()
     const byId = new Map(
@@ -64,11 +53,8 @@ export class DailySession {
     return session
   }
 
-  /**
-   * Marks one outstanding exercise for this verse answered. False when the
-   * verse has nothing left today, which is the normal case for extra practice
-   * after the session.
-   */
+  /** False when the verse has nothing left today — the normal case for extra
+      practice after the session. */
   completeNextForVerse(
     userVerseId: string,
     now: string,
@@ -83,18 +69,13 @@ export class DailySession {
     )
   }
 
-  /** Nothing reads a past day's plan. */
   prunePastDays(): void {
     planned.pruneBefore(this.userId, this.date)
   }
 }
 
-/**
- * What the day should contain, given the user's verses as they stand when it is
- * planned. Deliberately never touches the verse bank: verse_id is
- * translation-independent, so a plan built while reading one translation is
- * valid for every other.
- */
+/** Never touches the verse bank: verse_id is translation-independent, so a plan
+    built while reading one translation is valid for every other. */
 function desiredItems(userId: string, today: string): NewPlanItem[] {
   const runs: NewPlanItem[][] = []
 

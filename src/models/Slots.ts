@@ -14,13 +14,8 @@ export class Slots {
     return userVerses.occupiedSlots(this.userId)
   }
 
-  /**
-   * Fills every empty slot from the front of the practice queue, and returns
-   * the verses that took one.
-   *
-   * All 3 slots are live from signup — there is no ramp-up. Once the queue is
-   * exhausted the remaining slots stay empty; there is no wraparound.
-   */
+  /** All 3 slots are live from signup, and once the queue is exhausted the
+      rest stay empty — there is no ramp-up and no wraparound. */
   refill(): UserVerse[] {
     const occupied = this.occupied
     const queue = new PracticeQueue(this.userId).verseIds
@@ -42,10 +37,7 @@ export class Slots {
     return filled
   }
 
-  /**
-   * Swaps the occupant of a slot out — progress saved, so it rejoins the queue
-   * as an in-progress verse — and puts `verseId` in its place.
-   */
+  /** The occupant steps aside with its progress saved, rejoining the queue. */
   replace(
     verseId: string,
     slot: number,
@@ -71,11 +63,8 @@ export class Slots {
     }
   }
 
-  /**
-   * Puts one queued verse into one empty slot, whatever its state: a relearner
-   * re-enters at heavy, a paused verse resumes where it left off, an untouched
-   * verse starts at light.
-   */
+  /** A relearner re-enters at heavy, a paused verse resumes where it left off,
+      an untouched verse starts at light. */
   private activate(
     verseId: string,
     slot: number,

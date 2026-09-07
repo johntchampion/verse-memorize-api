@@ -15,7 +15,6 @@ import { recordAttempt } from '../services/attemptRecorder'
 import { sessionView } from '../views/sessionView'
 import type { AttemptInput } from '../schemas'
 
-/** UTC for a user row that has gone missing, rather than throwing. */
 function timezoneFor(req: Request): string {
   return req.user?.timezone ?? 'UTC'
 }
@@ -27,12 +26,9 @@ function practiceRequested(req: Request): boolean {
 }
 
 /**
- * Today's ordered exercise queue, or with `?practice=true` a short drill of the
- * slotted verses.
- *
- * `events` and `correctCount` cover the whole day, not the part of it the
- * caller was present for, which is what lets a resumed session recap everything
- * it moved. A drill gets neither: its recap is its own.
+ * `events` and `correctCount` cover the whole day, not the part the caller was
+ * present for, so a resumed session recaps everything it moved. A drill gets
+ * neither: its recap is its own.
  */
 export function today(req: Request) {
   const id = userId(req)
@@ -60,10 +56,7 @@ export function today(req: Request) {
   })
 }
 
-/**
- * `events` is what *this* attempt moved, not the day's — a client stepping
- * through a session appends as it goes and picks the rest up on resume.
- */
+/** `events` is what *this* attempt moved, not the day's. */
 export function attempt(req: Request, body: AttemptInput) {
   const id = userId(req)
 
@@ -101,8 +94,7 @@ export function complete(req: Request) {
 
   if (!alreadyLogged) sessionLogs.insert(id, new Date().toISOString())
 
-  // Runs either way: a refill that failed earlier (bank exhausted, slot freed
-  // between calls) should still get picked up on a repeat call.
+  // Runs either way: a refill that failed earlier should still be picked up.
   const slotsFilled = new Slots(id).refill()
 
   const now = new Date().toISOString()
@@ -110,8 +102,7 @@ export function complete(req: Request) {
     sessionEvents.record(id, today, now, slotEvent(verse)),
   )
 
-  // Nothing reads a past day's plan or events; this is the one routine call
-  // that can clear them out.
+  // The one routine call that can clear out finished days.
   new DailySession(id, today).prunePastDays()
   sessionEvents.pruneBefore(id, today)
 

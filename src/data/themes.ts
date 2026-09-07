@@ -1,14 +1,7 @@
 /**
- * Thematic groupings over the verse bank. Application data like the bank
- * itself: defined in code, never written to the database, and validated at
- * module load so a bad edit takes the server down at startup.
- *
- * Themes exist so a user can pull a whole topic to the front of their practice
- * queue at once; nothing in the progression model depends on them. They are
- * curated by content, not by curriculum position: a verse may appear in more
- * than one theme (Titus 3:5 is both grace and new birth), and a verse may
- * appear in none. A theme's verseIds are its own reading order — that is the
- * order they take when the theme is moved to the top of the queue.
+ * Groupings a user can pull to the front of the queue; nothing in the
+ * progression model depends on them. Curated by content, so a verse may appear
+ * in several themes or none, and a theme's verseIds are its own reading order.
  */
 import { versesInOrder } from './verses'
 
@@ -174,16 +167,11 @@ export function getTheme(id: string): Theme | undefined {
   return THEMES.find((t) => t.id === id)
 }
 
-/** Every theme a verse belongs to — possibly several, possibly none. */
 export function themesForVerse(verseId: string): Theme[] {
   return themesByVerseId.get(verseId) ?? []
 }
 
-/**
- * Every listed verse id must exist in the bank, with no duplicates inside a
- * single theme and no duplicate theme ids. Cross-theme repeats are fine, and a
- * bank verse absent from every theme is fine — it just doesn't jump with one.
- */
+/** Cross-theme repeats are fine; duplicates within one theme are not. */
 function validateThemes(): void {
   const bankIds = new Set(versesInOrder().map((v) => v.id))
   const themeIds = new Set<string>()
@@ -207,7 +195,6 @@ function validateThemes(): void {
   }
 }
 
-/** Builds the reverse index themesForVerse reads. */
 function indexThemes(): void {
   for (const theme of THEMES) {
     for (const verseId of theme.verseIds) {

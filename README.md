@@ -215,8 +215,8 @@ already in practice: slots refill one at a time from the new front of the queue
 as their occupants graduate or get swapped out.
 
 Once the queue is exhausted, slots just stay empty — there is no wraparound.
-All of this lives in [`slotRefill.ts`](./src/services/slotRefill.ts) and
-[`queue.ts`](./src/services/queue.ts).
+All of this lives in [`Slots.ts`](./src/models/Slots.ts) and
+[`PracticeQueue.ts`](./src/models/PracticeQueue.ts).
 
 ### Stages
 
@@ -372,7 +372,7 @@ call site.
 ### Exercise generation
 
 [`exerciseBuilder.ts`](./src/services/exerciseBuilder.ts) blanks words according
-to stage:
+to the density table in [`stage.ts`](./src/domain/stage.ts):
 
 | Stage             | Blanked | Input mode |
 | ----------------- | ------- | ---------- |
@@ -390,7 +390,7 @@ Blank selection is **deterministic**, seeded on `verseId:stage:instance`. The
 `instance` counter is why the 3 repetitions of a verse within one session blank
 different words while any single one stays reproducible.
 
-[`sessionPlan.ts`](./src/services/sessionPlan.ts) decides what the day holds:
+[`DailySession.ts`](./src/models/DailySession.ts) decides what the day holds:
 due reviews (one exercise each) plus learning verses (3 each), interleaved
 round-robin **by verse** so a user never grinds the same verse back to back.
 
@@ -406,7 +406,7 @@ append-only:
 - A slot refilled mid-session appends its three exercises to the tail, which is
   the same-day behaviour it has always had.
 
-Only identity and order are stored. [`sessionBuilder.ts`](./src/services/sessionBuilder.ts)
+Only identity and order are stored. [`DailySession.ts`](./src/models/DailySession.ts)
 regenerates the text, blanks and word bank on every read, at the verse's
 **current** stage — so a verse that upgrades a tier partway through the session
 gets harder repetitions for the rest of it.
@@ -447,57 +447,63 @@ that arrived rather than only the slot it landed in.
 
 ```
 src/
-  data/verses.ts            Loads + validates the bank; the only way in
-  data/translations/        One JSON file per translation, plus catalog.ts
-  db/schema.sql             Tables; applied at boot, all IF NOT EXISTS
-  db/client.ts              Connection and migrate()
-  db/rows.ts                Raw row shapes, one per table
-  db/userVerseRepository.ts Every user_verse query; returns domain models
-  db/sessionExerciseRepository.ts  Every session_exercise query
-  db/sessionEventRepository.ts     Every session_event query
-  db/attemptRepository.ts   Per-user attempt lookups; bounded on purpose
-  db/pushSubscriptionRepository.ts Every push_subscription query
-  domain/
-    stage.ts                The Stage union and the ladder between stages
-    userVerse.ts            UserVerse model, row mapping, wire-format shim
-    sessionExercise.ts      PlannedExercise model and row mapping
-    sessionEvent.ts         Pure "what did this attempt move" classifier
-    progression.ts          Pure attempt -> next-state rules + constants
-    reminder.ts             Pure "when is the reminder due, and send it?" rules
-  lib/dates.ts              Timezone-aware day boundaries and times of day
-  lib/errors.ts             ApiError and friends; status codes for services
-  lib/http.ts               parseBody
-  lib/translation.ts        Resolves the translation for a request
-  lib/words.ts              Shared word splitting (tiles + validator)
-  middleware/auth.ts        JWT sign/verify, requireAuth
-  middleware/translation.ts Resolves req.translation, 400s on unknown
-  routes/                   auth, session, verses, queue, me, translations, push
-  services/
-    stageMachine.ts         Applies a progression transition + side effects
-    slotRefill.ts           Slot fill and relearning priority
-    queue.ts                Practice queue membership and ordering
-    sessionPlan.ts          What today's queue holds; persists and resumes it
-    sessionBuilder.ts       Renders the plan into exercises
+  models/                   The things the app is about, as classes
+    User.ts                 Timezone, translation, password checks
+    UserVerse.ts            One user's progress against one verse
+    Streak.ts               Consecutive completed days
+    Slots.ts                The 3 learning slots: refill and swap
+    PracticeQueue.ts        Queue membership and ordering
+    DailySession.ts         The day's plan, fixed once and resumable
+    PracticeDrill.ts        The ?practice=true drill
+    SessionExercise.ts      Rendering one exercise
+    SessionEvent.ts         A recorded move, and its wire shape
+    AttemptHistory.ts       A verse's attempts, tallied
+  repositories/             Every SQL statement, one module per table
+  controllers/              One per resource; request in, payload out
+  views/                    Composite JSON payloads spanning models
+  routes/                   Path -> controller, plus the zod schema
+  schemas.ts                Every request body shape
+  domain/                   Pure rules the models delegate to
+    progression.ts          Attempt -> next-state rules + constants
+    stage.ts                The Stage union, the ladder, blank density
+    sessionEvent.ts         "What did this attempt move" classifier
+    sessionExercise.ts      PlannedExercise shape
+    reminder.ts             When a reminder is due, and whether to send
+  services/                 Orchestration across models
+    attemptRecorder.ts      The attempt transaction
     exerciseBuilder.ts      Blanking and word banks
-    reminderScheduler.ts    The daily reminder ticker, claim and fan-out
-    pushSender.ts           VAPID config and Web Push delivery
+    reminderScheduler.ts    The daily ticker
+    reminderSchedule.ts     Due-instant calculation and its cache
+    pushSender.ts           Web Push delivery and fan-out
+    vapid.ts                VAPID configuration
+  db/
+    schema.sql              Tables; applied at boot, all IF NOT EXISTS
+    client.ts               Connection and migrate()
+    rows.ts                 Raw row shapes, one per table
+    introspect.ts           Table and column existence checks
+    migrations/             Column adds, cascade rebuilds, the guard
+  lib/                      dates, errors, http, translation, words, random
+  middleware/               auth, loadUser, translation
+  data/                     The verse bank, themes, connectors
+  scripts/stats.ts          Admin usage report
   app.ts / server.ts        Wiring and boot
 ```
 
-Three layers, and the boundaries are the point:
+The boundaries are the point:
 
-- **`domain/`** is pure. No database, no clock, no Express. `progression.ts`
+- **`models/`** hold the behaviour. A `UserVerse` knows whether it is due; a
+  `PracticeQueue` knows its own order; a `DailySession` knows what today holds.
+- **`repositories/`** own every SQL statement and every row-to-model mapping.
+  Nothing above them sees a snake_case row, and nothing below them knows a
+  business rule.
+- **`domain/`** is pure. No database, no clock, no Express — `progression.ts`
   takes a verse's progress and an answer and returns the progress that should
-  replace it, so the rules can be tested without a server — see
-  `tests/progression.test.ts`.
-- **`services/`** does the things that touch the world: reading, writing,
-  running the follow-up work a domain transition asks for.
-- **`routes/`** stay thin: validate with `zod` via `parseBody`, check ownership,
-  delegate. They throw `QueueError`/`SlotError` rather than building status
-  codes; `app.ts` turns those into responses.
-
-Only `db/` sees a raw snake_case row. Everything above it works with the
-camelCase `UserVerse` model.
+  replace it, so the rules test without a server.
+- **`controllers/`** and **`views/`** turn a request into a payload. Controllers
+  never build a status code: they throw an `ApiError` and `app.ts` turns it into
+  the response.
+- **`routes/`** are a path, a schema and a controller call. All seven together
+  are under 200 lines.
 
 ---
 
@@ -741,7 +747,7 @@ and `tsc` will point at every switch and lookup table that needs the new case.
   raw timestamps for "same day".
 - **A review's schedule advances on due dates, not on exercises.** `isDue()` in
   `progression.ts` gates both `advanceReview` and `advanceMastered`, and it's
-  the same predicate `sessionPlan.ts` uses to decide what belongs in a day — so
+  the same predicate `DailySession` uses to decide what belongs in a day — so
   the schedule advances exactly when the verse was scheduled. Extra repetitions
   are still recorded in `attempt` and still tick the day's session off; they
   just don't move `interval_days`, `due_at` or either streak counter.

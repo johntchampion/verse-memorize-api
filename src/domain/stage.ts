@@ -1,16 +1,7 @@
 /**
- * The stage a verse occupies, and every question the app asks about one.
- *
- * A verse moves through three learning tiers, graduates to `review`, and may
- * reach `mastered`. Those are two different regimes: learning tiers are held in
- * a slot and advance on same-day answer streaks, while review and mastered are
- * unslotted and advance along an interval ladder.
- *
- * This module imports nothing. That is deliberate — stage questions are asked
- * from the routes, the services and the exercise builder alike, and a leaf
- * module lets all of them share one answer instead of re-deriving it.
+ * Learning tiers are held in a slot and advance on same-day answer streaks;
+ * review and mastered are unslotted and advance along an interval ladder.
  */
-
 import type { ExerciseType } from '../db/rows'
 
 export type Stage =
@@ -31,37 +22,26 @@ export function isLearningStage(stage: Stage): boolean {
   return (LEARNING_STAGES as readonly Stage[]).includes(stage)
 }
 
-/** Stages that surface in the review queue. */
 export function isReviewStage(stage: Stage): boolean {
   return stage === 'review' || stage === 'mastered'
 }
 
-/**
- * The next tier up, or null at the top of the ladder. A null return is the
- * signal to graduate: there is no learning stage after `learning_heavy`.
- */
+/** Null at the top of the ladder, which is the signal to graduate. */
 export function nextLearningStage(stage: Stage): Stage | null {
   const tier = (LEARNING_STAGES as readonly Stage[]).indexOf(stage)
   if (tier === -1 || tier === LEARNING_STAGES.length - 1) return null
   return LEARNING_STAGES[tier + 1]
 }
 
-/**
- * The next tier down, or null at the floor. `learning_light` has nowhere to
- * fall to, so misses there change nothing.
- */
+/** Null at the floor: learning_light has nowhere to fall to. */
 export function previousLearningStage(stage: Stage): Stage | null {
   const tier = (LEARNING_STAGES as readonly Stage[]).indexOf(stage)
   if (tier <= 0) return null
   return LEARNING_STAGES[tier - 1]
 }
 
-/**
- * Browse-screen status for a verse. Every verse is viewable — "not started"
- * just means the user has no progress against it yet. The three learning tiers
- * collapse into one `active` status because the browse list shows whether a
- * verse is being worked on, not how hard the drill currently is.
- */
+/** The three learning tiers collapse into `active`: the browse list shows
+    whether a verse is being worked on, not how hard the drill is. */
 export type VerseStatus = 'not_started' | 'active' | 'review' | 'mastered'
 
 export function browseStatusFor(stage: Stage | undefined): VerseStatus {
@@ -79,12 +59,7 @@ export function browseStatusFor(stage: Stage | undefined): VerseStatus {
   }
 }
 
-/**
- * Blank density and word-choice mode per stage.
- *
- * `density` is the fraction of words blanked; tiles vs. typing follows the
- * same table.
- */
+/** `density` is the fraction of words blanked; tiles vs. typing follows it. */
 export const STAGE_RULES: Record<
   Stage,
   { density: number; type: ExerciseType }

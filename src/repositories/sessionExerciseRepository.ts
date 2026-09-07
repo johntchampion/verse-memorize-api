@@ -25,7 +25,6 @@ export interface NewPlanItem {
   stage: Stage
 }
 
-/** Today's plan in order. Empty means the day hasn't been started yet. */
 export function forDay(userId: string, date: string): PlannedExercise[] {
   const rows = db
     .prepare(
@@ -37,13 +36,8 @@ export function forDay(userId: string, date: string): PlannedExercise[] {
   return rows.map(toPlannedExercise)
 }
 
-/**
- * Writes a day's plan in one go, numbering from 0.
- *
- * Called once per user per day and never added to afterwards: a position, once
- * handed to a client, is that exercise's place in the queue for the rest of
- * the day, and the length of the queue is settled the moment the day starts.
- */
+/** Once per user per day and never added to afterwards: a position, once handed
+    to a client, is that exercise's place in the queue for the rest of the day. */
 export function create(
   userId: string,
   date: string,
@@ -97,7 +91,6 @@ export function completeNext(
   return result.changes > 0
 }
 
-/** Drops a user's finished days. Nothing reads a past day's plan. */
 export function pruneBefore(userId: string, date: string): void {
   db.prepare(
     'DELETE FROM session_exercise WHERE user_id = ? AND session_date < ?',

@@ -1,15 +1,13 @@
 /**
- * The shapes SQLite hands back, one interface per table.
- *
- * These mirror schema.sql exactly — snake_case columns, integers standing in
- * for booleans — and exist only so the query layer can cast its results. Code
- * above the repository works with the domain models in src/domain/ instead;
- * a row type appearing outside src/db/ is a sign something skipped that
- * boundary.
+ * The shapes SQLite hands back, mirroring schema.sql. A row type outside
+ * src/db/ and src/repositories/ is a sign something skipped the boundary.
  */
 import type { SessionEventKind } from '../domain/sessionEvent'
 import type { SessionQueue } from '../domain/sessionExercise'
 import type { Stage } from '../domain/stage'
+
+/** SQLite has no boolean type. */
+export type SqliteBool = 0 | 1
 
 export const EXERCISE_TYPES = ['tile_fill_blank', 'type_fill_blank'] as const
 export type ExerciseType = (typeof EXERCISE_TYPES)[number]
@@ -21,8 +19,7 @@ export interface UserRow {
   created_at: string
   timezone: string
   translation: string
-  /** 0 or 1 — SQLite has no boolean type. */
-  reminders_enabled: number
+  reminders_enabled: SqliteBool
   /** Local date (YYYY-MM-DD) the last daily reminder was claimed for, in this
       user's timezone; NULL until the first one goes out. */
   reminder_last_sent_date: string | null
@@ -40,8 +37,7 @@ export interface UserVerseRow {
   due_at: string | null
   last_upgrade_date: string | null
   last_downgrade_date: string | null
-  /** 0 or 1 — SQLite has no boolean type. */
-  needs_relearning: number
+  needs_relearning: SqliteBool
   relearning_queued_at: string | null
   slot: number | null
   activated_at: string
@@ -52,8 +48,7 @@ export interface AttemptRow {
   id: string
   user_verse_id: string
   exercise_type: ExerciseType
-  /** 0 or 1 — SQLite has no boolean type. */
-  correct: number
+  correct: SqliteBool
   created_at: string
 }
 
@@ -77,7 +72,7 @@ export interface SessionExerciseRow {
   stage: Stage | null
   /** ISO 8601, or NULL while the exercise is still outstanding. */
   completed_at: string | null
-  /** 0 or 1 once answered; NULL while outstanding, or if it was answered
+  /** NULL while outstanding, or if it was answered
       before this column existed. */
   correct: number | null
 }

@@ -1,4 +1,3 @@
-/** Working out when a user's reminder is due, and remembering the answer. */
 import { reminderMinute } from '../domain/reminder'
 import {
   addDays,
@@ -9,23 +8,16 @@ import {
 import * as attempts from '../repositories/attemptRepository'
 
 /**
- * How far back to look for a habit to anchor to.
- *
  * Bounding the anchor query matters because attempts are never pruned: without
- * a floor the MAX walks a year-old account's entire history every day. Ninety
- * days is also right on its own terms — someone who hasn't practised since then
- * has no habitual time left to aim at, so they fall through to the 21:00
- * default.
+ * a floor the MAX walks a year-old account's whole history every day. Ninety
+ * days is also right on its own terms — someone quiet that long has no habitual
+ * time left to aim at.
  */
 const LOOKBACK_DAYS = 90
 
 /**
- * userId -> the due instant already worked out for a given local date.
- *
- * Holding the date rather than a timestamp means the entry evicts itself when
- * the day rolls over, so the map stays bounded by user count rather than by
- * uptime, and the `attempt` queries run once per user per day instead of once a
- * minute.
+ * Holding the date rather than a timestamp means an entry evicts itself when the
+ * day rolls over, so the map stays bounded by user count rather than uptime.
  */
 const dueCache = new Map<string, { date: string; dueMs: number }>()
 
@@ -34,12 +26,8 @@ export function clearDueCache(): void {
   dueCache.clear()
 }
 
-/**
- * When today's reminder is due for this user, as epoch millis.
- *
- * A user who changes timezone mid-day keeps a stale value until midnight, which
- * at worst puts one reminder off by the offset delta.
- */
+/** A user who changes timezone mid-day keeps a stale value until midnight,
+    which at worst puts one reminder off by the offset delta. */
 export function dueInstantFor(
   userId: string,
   timezone: string,
@@ -58,9 +46,8 @@ export function dueInstantFor(
 }
 
 /**
- * The minute of day worth aiming at: the first attempt of the most recent
- * *prior* day they attempted anything — prior, so today's own practice never
- * moves today's reminder. Null when there is no habit to anchor to.
+ * The first attempt of the most recent *prior* day they attempted anything —
+ * prior, so today's own practice never moves today's reminder.
  */
 function anchorMinuteFor(
   userId: string,

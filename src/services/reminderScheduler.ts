@@ -1,14 +1,7 @@
 /**
- * The daily practice reminder: who is due, and sending it to them.
- *
- * A ticker inside the web process rather than a cron job or a queue, because
- * the deployment is one container over one SQLite file. It does mean the
- * reminder is best-effort.
- *
- * Cheap on purpose. Every minute it reads one filtered scan of `users`, and for
- * almost all of them the answer is a string compare against a column already in
- * hand. The queries that cost something run once per enabled user per local
- * day, in the minute their reminder comes due.
+ * A ticker inside the web process rather than a cron job, because the
+ * deployment is one container over one SQLite file — which does make the
+ * reminder best-effort.
  */
 import type { PushSubscriptionRow } from '../db/client'
 import { reminderVerdict, type ReminderVerdict } from '../domain/reminder'
@@ -30,12 +23,8 @@ import { dueInstantFor } from './reminderSchedule'
 const TICK_MS = 60_000
 
 /**
- * How late a missed reminder may still go out.
- *
  * Two hours covers a deploy or a restart. It deliberately does not cover an
  * overnight outage — a 21:00 reminder delivered at 07:00 is worse than none.
- * Nothing stale survives the night anyway: the next tick falls on a new local
- * date, and that date's due instant is in the future.
  */
 const CATCH_UP_MS = 2 * 60 * 60 * 1000
 
@@ -44,10 +33,7 @@ const MID_SESSION_MS = 30 * 60 * 1000
 
 export interface ReminderPorts {
   now: () => Date
-  /**
-   * Delivers one payload to one subscription. Injected so tests never touch the
-   * network and never have to mock the web-push module.
-   */
+  /** Injected so tests never touch the network. */
   send: (
     subscription: PushSubscriptionRow,
     payload: ReminderPayload,
@@ -62,7 +48,6 @@ export interface TickSummary {
   verdicts: Partial<Record<ReminderVerdict, number>>
 }
 
-/** True when a session_log row already exists for the user's local `today`. */
 function completedOn(userId: string, timezone: string, today: string): boolean {
   return sessionLogs
     .recentForUser(userId)
@@ -72,21 +57,17 @@ function completedOn(userId: string, timezone: string, today: string): boolean {
 }
 
 /**
- * Claims today's reminder for a user, atomically, before any network I/O.
- *
- * Claim-before-send means a crash between the claim and the send loses that
- * day's reminder; send-then-record would instead re-send on restart, and a user
- * who gets the same nudge three times from a crash-looping container turns the
- * feature off and never turns it back on. Losing a day is the cheaper failure.
+ * Claim-before-send loses a day's reminder on a crash between the claim and the
+ * send; send-then-record would re-send on restart, and a user nudged three
+ * times by a crash-looping container turns the feature off for good. Losing a
+ * day is the cheaper failure.
  */
 function claim(userId: string, today: string): boolean {
   return users.claimReminderDay(userId, today)
 }
 
-/**
- * The two database-touching inputs are deferred past the checks that don't need
- * them, so they run once per user per day rather than once per tick.
- */
+/** The two database-touching inputs are deferred past the checks that don't
+    need them, so they run once per user per day rather than once per tick. */
 function verdictFor(
   user: ReminderCandidateRow,
   today: string,
@@ -115,7 +96,6 @@ function verdictFor(
   })
 }
 
-/** One pass over everyone who has opted in. */
 export async function runReminderTick(
   ports: Partial<ReminderPorts> = {},
 ): Promise<TickSummary> {
@@ -166,11 +146,8 @@ export async function runReminderTick(
 let timer: NodeJS.Timeout | null = null
 let ticking = false
 
-/**
- * setInterval does not await, so a slow tick could otherwise overlap the next
- * one. The claim would still stop a double send, but the overlap would double
- * the query load for nothing.
- */
+/** setInterval does not await, so a slow tick could otherwise overlap the next
+    one — harmless thanks to the claim, but twice the queries for nothing. */
 async function tickGuarded(ports: Partial<ReminderPorts>): Promise<void> {
   if (ticking) return
   ticking = true

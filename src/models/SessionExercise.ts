@@ -25,15 +25,11 @@ export interface RenderRequest {
 }
 
 /**
- * Renders one exercise at the stage the caller names — the day's session passes
- * the stage pinned when the day was planned, a drill passes the verse's live
- * one. Blanks are regenerated from `verseId:stage:instance` rather than stored.
- *
- * `userVerse` carries progress as it stands *now* regardless, so a client sees
- * a graduation the moment it happens without the queued repetitions behind it
- * changing difficulty.
- *
- * Null when the verse has left the bank: skip it rather than 500.
+ * The day's session passes the stage pinned when the day was planned, a drill
+ * passes the verse's live one; blanks regenerate from `verseId:stage:instance`.
+ * `userVerse` carries progress as it stands *now* regardless, so a client sees a
+ * graduation immediately without the queued repetitions changing difficulty.
+ * Null when the verse has left the bank: skip rather than 500.
  */
 export function renderExercise({
   verse,

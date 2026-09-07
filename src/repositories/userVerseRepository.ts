@@ -1,4 +1,3 @@
-/** Every `user_verse` query, returning domain models rather than rows. */
 import { randomUUID } from 'node:crypto'
 import { db } from '../db/client'
 import type { UserVerseRow } from '../db/rows'
@@ -41,17 +40,14 @@ export function findByUserAndVerse(
   )
 }
 
-/** Every verse this user has started, in no particular order. */
 export function allForUser(userId: string): UserVerse[] {
   return many('SELECT * FROM user_verse WHERE user_id = ?', userId)
 }
 
-/** Keyed by verse id — the lookup callers most often want. */
 export function byVerseIdForUser(userId: string): Map<string, UserVerse> {
   return new Map(allForUser(userId).map((verse) => [verse.verseId, verse]))
 }
 
-/** The verses currently held in learning slots, slot ascending. */
 export function slottedForUser(userId: string): UserVerse[] {
   return many(
     'SELECT * FROM user_verse WHERE user_id = ? AND slot IS NOT NULL ORDER BY slot',
@@ -86,7 +82,6 @@ export function occupiedSlots(userId: string): Set<number> {
   return new Set(rows.map((row) => row.slot))
 }
 
-/** Writes the progression fields back. Identity and activatedAt are untouched. */
 export function saveProgress(id: string, progress: VerseProgress): void {
   db.prepare(
     `UPDATE user_verse
@@ -120,7 +115,6 @@ export function saveProgress(id: string, progress: VerseProgress): void {
   )
 }
 
-/** Starts a verse the user has never practiced, at the easiest tier. */
 export function insertIntoSlot(
   userId: string,
   verseId: string,
@@ -157,13 +151,11 @@ export function resetForRelearning(id: string, slot: number): UserVerse {
   return findById(id)!
 }
 
-/** Puts a paused verse back in a slot with its tier and history intact. */
 export function assignSlot(id: string, slot: number): UserVerse {
   db.prepare('UPDATE user_verse SET slot = ? WHERE id = ?').run(slot, id)
   return findById(id)!
 }
 
-/** Frees a slot, leaving the verse's progress in place. */
 export function clearSlot(id: string): void {
   db.prepare('UPDATE user_verse SET slot = NULL WHERE id = ?').run(id)
 }

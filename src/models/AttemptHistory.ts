@@ -1,10 +1,6 @@
 import type { AttemptRow } from '../db/rows'
 
-/**
- * A verse's recent attempts, as GET /api/verses/:id reports them.
- *
- * `attempts` is the raw row shape: clients have always received it that way.
- */
+/** `attempts` is the raw row shape: clients have always received it that way. */
 export class AttemptHistory {
   constructor(readonly attempts: AttemptRow[]) {}
 
