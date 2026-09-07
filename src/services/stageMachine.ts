@@ -1,7 +1,8 @@
-import { randomUUID } from 'node:crypto'
-import { db, type ExerciseType, type SessionEventRow } from '../db/client'
-import * as sessionEvents from '../db/sessionEventRepository'
-import * as userVerses from '../db/userVerseRepository'
+import { db } from '../db/client'
+import type { ExerciseType, SessionEventRow } from '../db/rows'
+import * as attempts from '../repositories/attemptRepository'
+import * as sessionEvents from '../repositories/sessionEventRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import { advance } from '../domain/progression'
 import { attemptEvent, slotEvent } from '../domain/sessionEvent'
 import { progressOf, type UserVerse } from '../domain/userVerse'
@@ -46,10 +47,7 @@ export const recordAttempt = db.transaction(
     // "from" for the event below.
     const from = userVerse.stage
 
-    db.prepare(
-      `INSERT INTO attempt (id, user_verse_id, exercise_type, correct, created_at)
-       VALUES (?, ?, ?, ?, ?)`,
-    ).run(randomUUID(), userVerse.id, exerciseType, correct ? 1 : 0, now)
+    attempts.record(userVerse.id, exerciseType, correct, now)
 
     // Before the progress is saved, so the plan is built from the state that
     // made this exercise due: a graduating verse would otherwise be dropped

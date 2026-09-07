@@ -12,8 +12,11 @@
  * lookup in `attempt`, and the suppression checks — run once per enabled user
  * per local day, in the minute their reminder comes due.
  */
-import { db, type PushSubscriptionRow } from '../db/client'
-import * as attempts from '../db/attemptRepository'
+import type { PushSubscriptionRow } from '../db/client'
+import * as attempts from '../repositories/attemptRepository'
+import * as sessionLogs from '../repositories/sessionLogRepository'
+import * as users from '../repositories/userRepository'
+import type { ReminderCandidateRow } from '../repositories/userRepository'
 import {
   reminderMinute,
   reminderVerdict,
@@ -81,40 +84,15 @@ export interface TickSummary {
   verdicts: Partial<Record<ReminderVerdict, number>>
 }
 
-interface Candidate {
-  id: string
-  timezone: string
-  reminder_last_sent_date: string | null
-}
-
-/**
- * Users who have opted in and have somewhere to send to.
- *
- * No index on reminders_enabled: a two-valued column is the textbook case
- * where one buys nothing, and at this scale a filtered scan of `users` once a
- * minute is microseconds.
- */
-function candidates(): Candidate[] {
-  return db
-    .prepare(
-      `SELECT u.id, u.timezone, u.reminder_last_sent_date
-         FROM users u
-        WHERE u.reminders_enabled = 1
-          AND EXISTS (SELECT 1 FROM push_subscription s WHERE s.user_id = u.id)`,
-    )
-    .all() as Candidate[]
-}
+type Candidate = ReminderCandidateRow
 
 /** True when a session_log row already exists for the user's local `today`. */
 function completedOn(userId: string, timezone: string, today: string): boolean {
-  const rows = db
-    .prepare(
-      'SELECT completed_at FROM session_log WHERE user_id = ? ORDER BY completed_at DESC LIMIT 10',
+  return sessionLogs
+    .recentForUser(userId)
+    .some(
+      (row) => todayInTimezone(timezone, new Date(row.completed_at)) === today,
     )
-    .all(userId) as { completed_at: string }[]
-  return rows.some(
-    (row) => todayInTimezone(timezone, new Date(row.completed_at)) === today,
-  )
 }
 
 /**
@@ -128,15 +106,7 @@ function completedOn(userId: string, timezone: string, today: string): boolean {
  * Losing a day is the cheaper failure.
  */
 function claim(userId: string, today: string): boolean {
-  return (
-    db
-      .prepare(
-        `UPDATE users SET reminder_last_sent_date = ?
-          WHERE id = ?
-            AND (reminder_last_sent_date IS NULL OR reminder_last_sent_date <> ?)`,
-      )
-      .run(today, userId, today).changes === 1
-  )
+  return users.claimReminderDay(userId, today)
 }
 
 /**
@@ -178,7 +148,10 @@ function dueInstantFor(
   ).toISOString()
 
   let anchorMinute: number | null = null
-  const mostRecent = attempts.lastAttemptBefore(userId, startOfToday, floor)
+  const mostRecent = attempts.lastAttemptBefore(userId, {
+    since: floor,
+    before: startOfToday,
+  })
   if (mostRecent) {
     // The most recent prior attempt identifies the anchor day; the first
     // attempt *on* that day is the time of day worth aiming at.
@@ -218,7 +191,7 @@ export async function runReminderTick(
     verdicts: {},
   }
 
-  for (const user of candidates()) {
+  for (const user of users.reminderCandidates()) {
     summary.considered += 1
     const today = todayInTimezone(user.timezone, now)
 

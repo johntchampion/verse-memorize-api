@@ -8,8 +8,8 @@
  * imported before migrate() has created the tables.
  */
 import { randomUUID } from 'node:crypto'
-import { db } from './client'
-import type { PushSubscriptionRow } from './rows'
+import { db } from '../db/client'
+import type { PushSubscriptionRow } from '../db/rows'
 
 export interface NewSubscription {
   userId: string

@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { db, type AttemptRow } from '../db/client'
-import * as userVerses from '../db/userVerseRepository'
+import * as attempts from '../repositories/attemptRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import { browseStatusFor } from '../domain/stage'
 import { NotFoundError } from '../lib/errors'
 import { legacyUserVerseBody } from '../domain/userVerse'
@@ -9,6 +9,8 @@ import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
 import { queueVerseIds } from '../services/queue'
+
+const ATTEMPT_HISTORY_LIMIT = 100
 
 export const versesRouter = Router()
 
@@ -59,12 +61,8 @@ versesRouter.get('/verses/:id', (req, res) => {
 
   const progress = userVerses.findByUserAndVerse(id, verse.id)
 
-  const attempts = progress
-    ? (db
-        .prepare(
-          'SELECT * FROM attempt WHERE user_verse_id = ? ORDER BY created_at DESC LIMIT 100',
-        )
-        .all(progress.id) as AttemptRow[])
+  const history = progress
+    ? attempts.recentForUserVerse(progress.id, ATTEMPT_HISTORY_LIMIT)
     : []
 
   // Only review and mastered are scheduled; a learning or queued verse has no
@@ -93,9 +91,9 @@ versesRouter.get('/verses/:id', (req, res) => {
     userVerse: progress ? legacyUserVerseBody(progress) : null,
     schedule,
     history: {
-      attempts,
-      total: attempts.length,
-      correct: attempts.filter((a) => a.correct === 1).length,
+      attempts: history,
+      total: history.length,
+      correct: history.filter((a) => a.correct === 1).length,
     },
   })
 })

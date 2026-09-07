@@ -1,20 +1,42 @@
 /**
- * Attempt queries that ask about a *user* rather than a verse.
+ * Every `attempt` query.
  *
- * `attempt` has no user_id — it hangs off user_verse — so every one of these
- * joins. The access path is idx_attempt_uv (user_verse_id, created_at) reached
- * through idx_user_verse_user: one short index range per verse the user has
- * started. That stays cheap only while the created_at range is bounded, which
- * is why each of these takes explicit bounds rather than scanning all history.
- * Attempts are never pruned, so an unbounded MAX over a year-old account walks
- * tens of thousands of index entries.
- *
- * Statements are prepared per call rather than at module load: this module is
- * imported before migrate() has created the tables.
+ * `attempt` has no user_id — it hangs off user_verse — so the per-user lookups
+ * all join. The access path is idx_attempt_uv (user_verse_id, created_at)
+ * reached through idx_user_verse_user, which stays cheap only while the
+ * created_at range is bounded. Attempts are never pruned, so an unbounded MAX
+ * over a year-old account walks tens of thousands of index entries; that is why
+ * each of these takes explicit bounds.
  */
-import { db } from './client'
+import { randomUUID } from 'node:crypto'
+import { db } from '../db/client'
+import type { AttemptRow, ExerciseType } from '../db/rows'
 
-/** All three of these are one aggregate over one bounded range. */
+/** Most recent attempts first; bounded so a long history can't be dumped whole. */
+export function recentForUserVerse(
+  userVerseId: string,
+  limit: number,
+): AttemptRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM attempt WHERE user_verse_id = ?
+        ORDER BY created_at DESC LIMIT ?`,
+    )
+    .all(userVerseId, limit) as AttemptRow[]
+}
+
+export function record(
+  userVerseId: string,
+  exerciseType: ExerciseType,
+  correct: boolean,
+  now: string,
+): void {
+  db.prepare(
+    `INSERT INTO attempt (id, user_verse_id, exercise_type, correct, created_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(randomUUID(), userVerseId, exerciseType, correct ? 1 : 0, now)
+}
+
 function instant(sql: string, ...params: unknown[]): string | null {
   const row = db.prepare(sql).get(...params) as
     { at: string | null } | undefined
@@ -30,8 +52,7 @@ function instant(sql: string, ...params: unknown[]): string | null {
  */
 export function lastAttemptBefore(
   userId: string,
-  beforeIso: string,
-  sinceIso: string,
+  range: { since: string; before: string },
 ): string | null {
   return instant(
     `SELECT MAX(a.created_at) AS at
@@ -41,8 +62,8 @@ export function lastAttemptBefore(
         AND a.created_at >= ?
         AND a.created_at < ?`,
     userId,
-    sinceIso,
-    beforeIso,
+    range.since,
+    range.before,
   )
 }
 

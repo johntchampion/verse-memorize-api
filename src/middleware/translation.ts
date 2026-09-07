@@ -10,8 +10,8 @@
  * *stored* value is not the caller's fault and falls back to the default.
  */
 import type { NextFunction, Request, Response } from 'express'
-import { db, type UserRow } from '../db/client'
 import { BadRequestError } from '../lib/errors'
+import * as users from '../repositories/userRepository'
 import { translationFor } from '../lib/translation'
 
 declare global {
@@ -27,10 +27,7 @@ export function resolveTranslation(
   _res: Response,
   next: NextFunction,
 ): void {
-  const user = db
-    .prepare('SELECT translation FROM users WHERE id = ?')
-    .get(req.userId) as Pick<UserRow, 'translation'> | undefined
-
+  const user = req.userId ? users.findById(req.userId) : undefined
   const resolved = translationFor(req, user?.translation)
   if (!resolved) throw new BadRequestError('unknown translation')
 

@@ -1,8 +1,10 @@
 import bcrypt from 'bcrypt'
 import { Router } from 'express'
 import { z } from 'zod'
-import { db, type SessionLogRow, type UserRow } from '../db/client'
-import * as userVerses from '../db/userVerseRepository'
+import type { SessionLogRow } from '../db/rows'
+import * as sessionLogs from '../repositories/sessionLogRepository'
+import * as users from '../repositories/userRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import {
   getVerse,
   isTranslation,
@@ -49,15 +51,10 @@ export function currentStreak(days: Set<string>, today: string): number {
 
 /** The GET /api/me response body, shared with PATCH so both return one shape. */
 function profileFor(id: string) {
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
-    UserRow | undefined
+  const user = users.findById(id)
   if (!user) return null
 
-  const sessions = db
-    .prepare(
-      'SELECT * FROM session_log WHERE user_id = ? ORDER BY completed_at DESC',
-    )
-    .all(id) as SessionLogRow[]
+  const sessions = sessionLogs.allForUser(id)
 
   const active = userVerses.slottedForUser(id)
   const versesStarted = userVerses.countForUser(id)
@@ -160,28 +157,15 @@ meRouter.patch('/me', validate(patchBody), (req, res) => {
     throw new BadRequestError('unknown translation')
   }
 
-  // Only the supplied fields are written, so a partial PATCH leaves the rest
-  // of the row alone.
-  const updates: string[] = []
-  // Widened past string because SQLite spells a boolean 0 or 1.
-  const values: (string | number)[] = []
-  if (timezone !== undefined) {
-    updates.push('timezone = ?')
-    values.push(timezone)
-  }
-  if (translation !== undefined) {
-    updates.push('translation = ?')
-    values.push(normalizeTranslation(translation)!)
-  }
-  if (remindersEnabled !== undefined) {
-    updates.push('reminders_enabled = ?')
-    values.push(remindersEnabled ? 1 : 0)
-  }
-
-  const result = db
-    .prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`)
-    .run(...values, id)
-  if (result.changes === 0) throw new NotFoundError('user not found')
+  const updated = users.updateSettings(id, {
+    timezone,
+    translation:
+      translation === undefined
+        ? undefined
+        : normalizeTranslation(translation)!,
+    remindersEnabled,
+  })
+  if (!updated) throw new NotFoundError('user not found')
 
   res.json(profileFor(id))
 })
@@ -206,14 +190,13 @@ meRouter.post(
     const id = userId(req)
     const { password } = validated(req, deleteAccountBody)
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
-      UserRow | undefined
+    const user = users.findById(id)
     if (!user) throw new NotFoundError('user not found')
 
     const ok = await bcrypt.compare(password, user.password_hash)
     if (!ok) throw new UnauthorizedError('invalid password')
 
-    db.prepare('DELETE FROM users WHERE id = ?').run(id)
+    users.remove(id)
     res.json({ deleted: true })
   },
 )

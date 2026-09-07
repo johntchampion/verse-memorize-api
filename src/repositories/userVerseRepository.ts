@@ -1,22 +1,29 @@
-/**
- * Every `user_verse` query, in one place, returning domain models.
- *
- * These statements used to be written inline at a dozen call sites across the
- * routes and services, each with its own `as UserVerseRow` cast and three of
- * them character-for-character identical. Collecting them here means a column
- * rename touches one file, and callers above this boundary never see a row.
- *
- * Statements are prepared per call rather than at module load: this module is
- * imported before migrate() has created the tables.
- */
+/** Every `user_verse` query, returning domain models rather than rows. */
 import { randomUUID } from 'node:crypto'
-import { db } from './client'
-import type { UserVerseRow } from './rows'
-import {
-  toUserVerse,
-  type UserVerse,
-  type VerseProgress,
-} from '../domain/userVerse'
+import { db } from '../db/client'
+import type { UserVerseRow } from '../db/rows'
+import type { UserVerse, VerseProgress } from '../domain/userVerse'
+
+export function toUserVerse(row: UserVerseRow): UserVerse {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    verseId: row.verse_id,
+    stage: row.stage,
+    consecutiveCorrect: row.consecutive_correct,
+    consecutiveIncorrect: row.consecutive_incorrect,
+    streakDate: row.streak_date,
+    intervalDays: row.interval_days,
+    dueAt: row.due_at,
+    lastUpgradeDate: row.last_upgrade_date,
+    lastDowngradeDate: row.last_downgrade_date,
+    needsRelearning: row.needs_relearning === 1,
+    relearningQueuedAt: row.relearning_queued_at,
+    slot: row.slot,
+    activatedAt: row.activated_at,
+    graduatedAt: row.graduated_at,
+  }
+}
 
 function one(sql: string, ...params: unknown[]): UserVerse | undefined {
   const row = db.prepare(sql).get(...params) as UserVerseRow | undefined

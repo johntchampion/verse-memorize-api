@@ -1,14 +1,10 @@
-import { randomUUID } from 'node:crypto'
 import { Router, type Request } from 'express'
 import { z } from 'zod'
-import {
-  db,
-  type SessionEventRow,
-  type SessionLogRow,
-  type UserRow,
-} from '../db/client'
-import * as sessionEvents from '../db/sessionEventRepository'
-import * as userVerses from '../db/userVerseRepository'
+import type { SessionEventRow } from '../db/rows'
+import * as sessionEvents from '../repositories/sessionEventRepository'
+import * as sessionLogs from '../repositories/sessionLogRepository'
+import * as users from '../repositories/userRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import { getVerse } from '../data/verses'
 import { slotEvent } from '../domain/sessionEvent'
 import { legacyUserVerseBody } from '../domain/userVerse'
@@ -29,9 +25,7 @@ export const sessionRouter = Router()
 
 /** UTC for a user row that has gone missing, rather than throwing. */
 function timezoneFor(id: string): string {
-  const user = db.prepare('SELECT timezone FROM users WHERE id = ?').get(id) as
-    Pick<UserRow, 'timezone'> | undefined
-  return user?.timezone ?? 'UTC'
+  return users.findById(id)?.timezone ?? 'UTC'
 }
 
 /** Accepts `true` or `1`; anything else, including absent, is false. */
@@ -175,21 +169,13 @@ sessionRouter.post('/session/complete', resolveTranslation, (req, res) => {
 
   // completed_at is a UTC instant, so "already logged today" is decided by
   // rendering recent rows back into the user's local date.
-  const recent = db
-    .prepare(
-      'SELECT * FROM session_log WHERE user_id = ? ORDER BY completed_at DESC LIMIT 10',
+  const alreadyLogged = sessionLogs
+    .recentForUser(id)
+    .some(
+      (row) => todayInTimezone(timezone, new Date(row.completed_at)) === today,
     )
-    .all(id) as SessionLogRow[]
 
-  const alreadyLogged = recent.some(
-    (row) => todayInTimezone(timezone, new Date(row.completed_at)) === today,
-  )
-
-  if (!alreadyLogged) {
-    db.prepare(
-      'INSERT INTO session_log (id, user_id, completed_at) VALUES (?, ?, ?)',
-    ).run(randomUUID(), id, new Date().toISOString())
-  }
+  if (!alreadyLogged) sessionLogs.insert(id, new Date().toISOString())
 
   // Runs either way: a refill that failed earlier (bank exhausted, slot freed
   // between calls) should still get picked up on a repeat call.
@@ -205,11 +191,7 @@ sessionRouter.post('/session/complete', resolveTranslation, (req, res) => {
   pruneBefore(id, today)
   sessionEvents.pruneBefore(id, today)
 
-  const { sessionsCompleted } = db
-    .prepare(
-      'SELECT COUNT(*) AS sessionsCompleted FROM session_log WHERE user_id = ?',
-    )
-    .get(id) as { sessionsCompleted: number }
+  const sessionsCompleted = sessionLogs.countForUser(id)
 
   res.json({
     recorded: !alreadyLogged,

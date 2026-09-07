@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { db } from './client'
-import type { SessionEventRow } from './rows'
+import { db } from '../db/client'
+import type { SessionEventRow } from '../db/rows'
 import type { NewSessionEvent } from '../domain/sessionEvent'
 
 /**

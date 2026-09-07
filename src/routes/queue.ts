@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import * as userVerses from '../db/userVerseRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import { THEMES, themesForVerse } from '../data/themes'
 import { versesInOrder } from '../data/verses'
 import { legacyUserVerseBody } from '../domain/userVerse'

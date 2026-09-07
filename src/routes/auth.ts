@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto'
 import bcrypt from 'bcrypt'
 import { Router } from 'express'
 import { z } from 'zod'
-import { db, type UserRow } from '../db/client'
+import * as users from '../repositories/userRepository'
 import {
   DEFAULT_TRANSLATION,
   isTranslation,
@@ -37,21 +36,19 @@ authRouter.post('/signup', validate(credentials), async (req, res) => {
     throw new BadRequestError('unknown translation')
   }
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email)
-  if (existing) throw new ConflictError('email already registered')
+  if (users.existsByEmail(email)) {
+    throw new ConflictError('email already registered')
+  }
 
-  const id = randomUUID()
-  db.prepare(
-    `INSERT INTO users (id, email, password_hash, created_at, timezone, translation)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(
-    id,
+  const id = users.create({
     email,
-    await bcrypt.hash(password, BCRYPT_COST),
-    new Date().toISOString(),
-    timezone ?? 'UTC',
-    translation ? normalizeTranslation(translation)! : DEFAULT_TRANSLATION,
-  )
+    passwordHash: await bcrypt.hash(password, BCRYPT_COST),
+    timezone: timezone ?? 'UTC',
+    translation: translation
+      ? normalizeTranslation(translation)!
+      : DEFAULT_TRANSLATION,
+    now: new Date().toISOString(),
+  })
 
   // All 3 slots are live immediately — there is no ramp-up.
   refillSlots(id)
@@ -67,9 +64,7 @@ authRouter.post(
     const body = validated(req, credentials)
     const email = body.email.trim().toLowerCase()
 
-    const user = db
-      .prepare('SELECT * FROM users WHERE email = ?')
-      .get(email) as UserRow | undefined
+    const user = users.findByEmail(email)
     // Compare against a dummy hash when the user is missing so that a bad email
     // and a bad password take the same amount of time.
     const hash =

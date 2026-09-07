@@ -1,5 +1,5 @@
-import { db } from '../db/client'
-import * as userVerses from '../db/userVerseRepository'
+import * as queueOrder from '../repositories/queueOrderRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import { isLearningStage } from '../domain/stage'
 import type { UserVerse } from '../domain/userVerse'
 import { QueueError } from '../lib/errors'
@@ -41,27 +41,11 @@ export function hasSavedProgress(verse: UserVerse | undefined): boolean {
 }
 
 function storedOrder(userId: string): string[] | null {
-  const row = db
-    .prepare('SELECT verse_order FROM user_queue WHERE user_id = ?')
-    .get(userId) as { verse_order: string } | undefined
-  if (!row) return null
-  try {
-    const parsed: unknown = JSON.parse(row.verse_order)
-    return Array.isArray(parsed)
-      ? parsed.filter((v) => typeof v === 'string')
-      : null
-  } catch {
-    return null
-  }
+  return queueOrder.read(userId)
 }
 
 function writeOrder(userId: string, verseIds: string[]): void {
-  db.prepare(
-    `INSERT INTO user_queue (user_id, verse_order, updated_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE
-       SET verse_order = excluded.verse_order, updated_at = excluded.updated_at`,
-  ).run(userId, JSON.stringify(verseIds), new Date().toISOString())
+  queueOrder.write(userId, verseIds, new Date().toISOString())
 }
 
 /** Whether this user has customized the order (vs. the default). */
@@ -138,7 +122,7 @@ export function setQueueOrder(userId: string, verseIds: string[]): void {
 
 /** Back to the default order. */
 export function resetQueueOrder(userId: string): void {
-  db.prepare('DELETE FROM user_queue WHERE user_id = ?').run(userId)
+  queueOrder.remove(userId)
 }
 
 /**

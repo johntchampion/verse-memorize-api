@@ -86,27 +86,6 @@ export function progressOf(verse: UserVerse): VerseProgress {
   }
 }
 
-export function toUserVerse(row: UserVerseRow): UserVerse {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    verseId: row.verse_id,
-    stage: row.stage,
-    consecutiveCorrect: row.consecutive_correct,
-    consecutiveIncorrect: row.consecutive_incorrect,
-    streakDate: row.streak_date,
-    intervalDays: row.interval_days,
-    dueAt: row.due_at,
-    lastUpgradeDate: row.last_upgrade_date,
-    lastDowngradeDate: row.last_downgrade_date,
-    needsRelearning: row.needs_relearning === 1,
-    relearningQueuedAt: row.relearning_queued_at,
-    slot: row.slot,
-    activatedAt: row.activated_at,
-    graduatedAt: row.graduated_at,
-  }
-}
-
 /**
  * The v1 wire shape: a raw `user_verse` row, snake_case, with
  * `needs_relearning` as 0/1.

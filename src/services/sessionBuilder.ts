@@ -1,5 +1,5 @@
 import type { UserVerseRow } from '../db/client'
-import * as userVerses from '../db/userVerseRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import { DEFAULT_TRANSLATION, getVerse } from '../data/verses'
 import type { SessionQueue } from '../domain/sessionExercise'
 import type { Stage } from '../domain/stage'

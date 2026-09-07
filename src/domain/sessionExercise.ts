@@ -1,4 +1,3 @@
-import type { SessionExerciseRow } from '../db/rows'
 import type { Stage } from './stage'
 
 /** Which queue a planned exercise was drawn from, so the client can label it. */
@@ -35,17 +34,4 @@ export interface PlannedExercise {
    * counts trues rather than subtracting falses.
    */
   correct: boolean | null
-}
-
-export function toPlannedExercise(row: SessionExerciseRow): PlannedExercise {
-  return {
-    id: row.id,
-    userVerseId: row.user_verse_id,
-    queue: row.queue,
-    instance: row.instance,
-    position: row.position,
-    stage: row.stage,
-    completed: row.completed_at !== null,
-    correct: row.correct === null ? null : row.correct === 1,
-  }
 }

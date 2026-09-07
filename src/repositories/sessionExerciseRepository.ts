@@ -1,20 +1,23 @@
 import { randomUUID } from 'node:crypto'
-import { db } from './client'
-import type { SessionExerciseRow } from './rows'
-import {
-  type PlannedExercise,
-  type SessionQueue,
-  toPlannedExercise,
-} from '../domain/sessionExercise'
+import { db } from '../db/client'
+import type { SessionExerciseRow } from '../db/rows'
+import type { PlannedExercise, SessionQueue } from '../domain/sessionExercise'
 import type { Stage } from '../domain/stage'
 
-/**
- * Every session_exercise query. Like userVerseRepository, statements are
- * prepared per call rather than at module load: this module is imported before
- * migrate() has created the table.
- */
+export function toPlannedExercise(row: SessionExerciseRow): PlannedExercise {
+  return {
+    id: row.id,
+    userVerseId: row.user_verse_id,
+    queue: row.queue,
+    instance: row.instance,
+    position: row.position,
+    stage: row.stage,
+    completed: row.completed_at !== null,
+    correct: row.correct === null ? null : row.correct === 1,
+  }
+}
 
-/** What ensureTodayPlan hands down to be written; position is assigned here. */
+/** Position is assigned here, from the order of the items handed down. */
 export interface NewPlanItem {
   userVerseId: string
   queue: SessionQueue

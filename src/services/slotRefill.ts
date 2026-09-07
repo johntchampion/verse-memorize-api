@@ -1,6 +1,6 @@
 import { getVerse } from '../data/verses'
 import { SlotError } from '../lib/errors'
-import * as userVerses from '../db/userVerseRepository'
+import * as userVerses from '../repositories/userVerseRepository'
 import type { UserVerse } from '../domain/userVerse'
 import { isQueued, queueVerseIds } from './queue'
 

@@ -12,7 +12,7 @@
  * don't will happily keep delivering while another silently stops.
  */
 import webpush, { WebPushError } from 'web-push'
-import * as pushSubscriptions from '../db/pushSubscriptionRepository'
+import * as pushSubscriptions from '../repositories/pushSubscriptionRepository'
 import type { PushSubscriptionRow } from '../db/client'
 import { PushNotConfiguredError } from '../lib/errors'
 

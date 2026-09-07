@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import * as pushSubscriptions from '../db/pushSubscriptionRepository'
+import * as pushSubscriptions from '../repositories/pushSubscriptionRepository'
 import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import {
