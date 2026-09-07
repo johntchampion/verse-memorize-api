@@ -10,7 +10,7 @@
  */
 import path from 'node:path'
 import Database from 'better-sqlite3'
-import { currentStreak, sessionDates } from '../routes/me'
+import { Streak } from '../models/Streak'
 import { todayInTimezone } from '../lib/dates'
 import { getVerse } from '../data/verses'
 import type { SessionLogRow } from '../db/rows'
@@ -83,8 +83,8 @@ for (const row of db
 }
 
 function streakFor(userId: string, timezone: string): number {
-  const days = sessionDates(sessionsByUser.get(userId) ?? [], timezone)
-  return currentStreak(days, todayInTimezone(timezone))
+  const sessions = sessionsByUser.get(userId) ?? []
+  return new Streak(sessions, timezone).lengthAsOf(todayInTimezone(timezone))
 }
 
 const slottedByUser = new Map<string, SlottedVerseRow[]>()

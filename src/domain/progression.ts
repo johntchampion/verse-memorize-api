@@ -23,7 +23,7 @@ import {
   nextLearningStage,
   previousLearningStage,
 } from './stage'
-import type { VerseProgress } from './userVerse'
+import type { VerseProgress } from '../models/UserVerse'
 
 // Tuning constants. Change these here, not at the call sites.
 

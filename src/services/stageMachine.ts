@@ -5,7 +5,7 @@ import * as sessionEvents from '../repositories/sessionEventRepository'
 import * as userVerses from '../repositories/userVerseRepository'
 import { advance } from '../domain/progression'
 import { attemptEvent, slotEvent } from '../domain/sessionEvent'
-import { progressOf, type UserVerse } from '../domain/userVerse'
+import type { UserVerse } from '../models/UserVerse'
 import { todayInTimezone } from '../lib/dates'
 import { refillSlots } from './slotRefill'
 import { bumpRelearningToFront } from './queue'
@@ -56,7 +56,7 @@ export const recordAttempt = db.transaction(
     // without fetching the session first still ticks items off.
     ensureTodayPlan(userVerse.userId, today)
 
-    const transition = advance(progressOf(userVerse), correct, today, now)
+    const transition = advance(userVerse.progress, correct, today, now)
     userVerses.saveProgress(userVerse.id, transition.next)
 
     // A no-op once the verse has nothing outstanding today — which is exactly

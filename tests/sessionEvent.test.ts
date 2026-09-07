@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { attemptEventKind, slotEventKind } from '../src/domain/sessionEvent'
 import type { Transition } from '../src/domain/progression'
-import type { UserVerse } from '../src/domain/userVerse'
+import { UserVerse, type UserVerseFields } from '../src/models/UserVerse'
 import type { Stage } from '../src/domain/stage'
 
 /**
@@ -11,8 +11,8 @@ import type { Stage } from '../src/domain/stage'
  * be free.
  */
 
-function verse(overrides: Partial<UserVerse> = {}): UserVerse {
-  return {
+function verse(overrides: Partial<UserVerseFields> = {}): UserVerse {
+  return new UserVerse({
     id: 'uv-1',
     userId: 'user-1',
     verseId: 'john-3-16',
@@ -30,7 +30,7 @@ function verse(overrides: Partial<UserVerse> = {}): UserVerse {
     activatedAt: '2026-01-01T00:00:00.000Z',
     graduatedAt: null,
     ...overrides,
-  }
+  })
 }
 
 function transition(overrides: Partial<Transition> = {}): Transition {

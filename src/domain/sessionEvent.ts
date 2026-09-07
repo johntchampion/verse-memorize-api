@@ -17,7 +17,7 @@
  */
 import { LEARNING_STAGES, type Stage } from './stage'
 import type { Transition } from './progression'
-import type { UserVerse } from './userVerse'
+import type { UserVerse } from '../models/UserVerse'
 
 export type SessionEventKind =
   /** Climbed or slipped a learning tier. */

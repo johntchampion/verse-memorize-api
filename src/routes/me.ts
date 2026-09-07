@@ -1,17 +1,11 @@
-import bcrypt from 'bcrypt'
 import { Router } from 'express'
 import { z } from 'zod'
-import type { SessionLogRow } from '../db/rows'
+import { Streak } from '../models/Streak'
+import { User } from '../models/User'
 import * as sessionLogs from '../repositories/sessionLogRepository'
 import * as users from '../repositories/userRepository'
 import * as userVerses from '../repositories/userVerseRepository'
-import {
-  getVerse,
-  isTranslation,
-  normalizeTranslation,
-  resolveTranslation,
-} from '../data/verses'
-import { addDays, todayInTimezone } from '../lib/dates'
+import { getVerse, isTranslation, normalizeTranslation } from '../data/verses'
 import {
   BadRequestError,
   NotFoundError,
@@ -23,45 +17,20 @@ import { MAX_SLOTS } from '../services/slotRefill'
 
 export const meRouter = Router()
 
-/** Local dates (YYYY-MM-DD) on which a session was completed. */
-export function sessionDates(
-  rows: SessionLogRow[],
-  timezone: string,
-): Set<string> {
-  return new Set(
-    rows.map((r) => todayInTimezone(timezone, new Date(r.completed_at))),
-  )
-}
-
-/**
- * Consecutive days ending today (or yesterday, if today's session isn't done
- * yet) that have a session_log row, counted in the user's local dates.
- */
-export function currentStreak(days: Set<string>, today: string): number {
-  // An unfinished today shouldn't zero out a streak that's still alive.
-  let cursor = days.has(today) ? today : addDays(today, -1)
-
-  let streak = 0
-  while (days.has(cursor)) {
-    streak += 1
-    cursor = addDays(cursor, -1)
-  }
-  return streak
-}
-
 /** The GET /api/me response body, shared with PATCH so both return one shape. */
 function profileFor(id: string) {
-  const user = users.findById(id)
-  if (!user) return null
+  const row = users.findById(id)
+  if (!row) return null
 
+  const user = new User(row)
   const sessions = sessionLogs.allForUser(id)
+  const streak = new Streak(sessions, user.timezone)
 
   const active = userVerses.slottedForUser(id)
   const versesStarted = userVerses.countForUser(id)
 
-  const today = todayInTimezone(user.timezone)
-  const translation = resolveTranslation(user.translation)
-  const sessionDays = sessionDates(sessions, user.timezone)
+  const today = user.today()
+  const translation = user.translation
 
   return {
     user: {
@@ -69,11 +38,11 @@ function profileFor(id: string) {
       email: user.email,
       timezone: user.timezone,
       translation,
-      createdAt: user.created_at,
-      remindersEnabled: user.reminders_enabled === 1,
+      createdAt: user.createdAt,
+      remindersEnabled: user.remindersEnabled,
     },
-    streak: currentStreak(sessionDays, today),
-    completedToday: sessionDays.has(today),
+    streak: streak.lengthAsOf(today),
+    completedToday: streak.completedOn(today),
     sessionsCompleted: sessions.length,
     versesStarted,
     slots: {
@@ -90,10 +59,7 @@ function profileFor(id: string) {
         // today, so the client needs the date to tell a live run from a dead
         // one carried over from yesterday.
         streakDate: verse.streakDate,
-        // The one-tier-change-per-day cap, already spent: further correct
-        // answers today are practice, not progress.
-        tierChangeUsedToday:
-          verse.lastUpgradeDate === today || verse.lastDowngradeDate === today,
+        tierChangeUsedToday: verse.tierChangeUsedToday(today),
       })),
     },
   }
@@ -190,10 +156,10 @@ meRouter.post(
     const id = userId(req)
     const { password } = validated(req, deleteAccountBody)
 
-    const user = users.findById(id)
-    if (!user) throw new NotFoundError('user not found')
+    const row = users.findById(id)
+    if (!row) throw new NotFoundError('user not found')
 
-    const ok = await bcrypt.compare(password, user.password_hash)
+    const ok = await new User(row).verifyPassword(password)
     if (!ok) throw new UnauthorizedError('invalid password')
 
     users.remove(id)

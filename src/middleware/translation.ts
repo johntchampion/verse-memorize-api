@@ -11,7 +11,6 @@
  */
 import type { NextFunction, Request, Response } from 'express'
 import { BadRequestError } from '../lib/errors'
-import * as users from '../repositories/userRepository'
 import { translationFor } from '../lib/translation'
 
 declare global {
@@ -27,8 +26,7 @@ export function resolveTranslation(
   _res: Response,
   next: NextFunction,
 ): void {
-  const user = req.userId ? users.findById(req.userId) : undefined
-  const resolved = translationFor(req, user?.translation)
+  const resolved = translationFor(req, req.user?.translation)
   if (!resolved) throw new BadRequestError('unknown translation')
 
   req.translation = resolved

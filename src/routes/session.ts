@@ -1,13 +1,11 @@
 import { Router, type Request } from 'express'
 import { z } from 'zod'
-import type { SessionEventRow } from '../db/rows'
 import * as sessionEvents from '../repositories/sessionEventRepository'
 import * as sessionLogs from '../repositories/sessionLogRepository'
-import * as users from '../repositories/userRepository'
 import * as userVerses from '../repositories/userVerseRepository'
 import { getVerse } from '../data/verses'
 import { slotEvent } from '../domain/sessionEvent'
-import { legacyUserVerseBody } from '../domain/userVerse'
+import { SessionEvent } from '../models/SessionEvent'
 import { todayInTimezone } from '../lib/dates'
 import { NotFoundError } from '../lib/errors'
 import { validate, validated } from '../lib/http'
@@ -24,48 +22,14 @@ import { recordAttempt } from '../services/stageMachine'
 export const sessionRouter = Router()
 
 /** UTC for a user row that has gone missing, rather than throwing. */
-function timezoneFor(id: string): string {
-  return users.findById(id)?.timezone ?? 'UTC'
+function timezoneFor(req: Request): string {
+  return req.user?.timezone ?? 'UTC'
 }
 
 /** Accepts `true` or `1`; anything else, including absent, is false. */
 function practiceRequested(req: Request): boolean {
   const flag = req.query.practice
   return flag === 'true' || flag === '1'
-}
-
-/**
- * A recorded event, as the completion screen needs it.
- *
- * The stored row keeps only the verse slug, because a slug is what stays true
- * across a translation change; the human reference is rendered here, from the
- * bank the reader is currently on. That is also what lets a slot event name the
- * verse that arrived instead of just the slot it landed in.
- *
- * A verse missing from the bank is dropped rather than served referenceless —
- * the same call sessionBuilder.render makes.
- */
-function sessionEventBody(row: SessionEventRow, translationCode: string) {
-  const verse = getVerse(row.verse_id, translationCode)
-  if (!verse) return null
-
-  return {
-    id: row.id,
-    kind: row.kind,
-    verseId: row.verse_id,
-    reference: verse.reference,
-    stageFrom: row.stage_from,
-    stageTo: row.stage_to,
-    slot: row.slot,
-    createdAt: row.created_at,
-  }
-}
-
-/** Every event in `rows` that still has a verse behind it. */
-function sessionEventBodies(rows: SessionEventRow[], translationCode: string) {
-  return rows
-    .map((row) => sessionEventBody(row, translationCode))
-    .filter((body) => body !== null)
 }
 
 /**
@@ -94,12 +58,12 @@ sessionRouter.get('/session/today', resolveTranslation, (req, res) => {
 
   const exercises = practice
     ? buildPracticeSession(id, translationCode)
-    : buildTodaySession(id, timezoneFor(id), translationCode)
+    : buildTodaySession(id, timezoneFor(req), translationCode)
 
   const events = practice
     ? []
-    : sessionEventBodies(
-        sessionEvents.forDay(id, todayInTimezone(timezoneFor(id))),
+    : SessionEvent.bodies(
+        sessionEvents.forDay(id, todayInTimezone(timezoneFor(req))),
         translationCode,
       )
 
@@ -146,14 +110,14 @@ sessionRouter.post(
       userVerse,
       body.exerciseType,
       body.correct,
-      timezoneFor(id),
+      timezoneFor(req),
     )
 
     res.json({
-      userVerse: legacyUserVerseBody(outcome.userVerse),
+      userVerse: outcome.userVerse.toLegacyBody(),
       graduated: outcome.graduated,
-      slotsFilled: outcome.slotsFilled.map(legacyUserVerseBody),
-      events: sessionEventBodies(outcome.events, translation(req)),
+      slotsFilled: outcome.slotsFilled.map((verse) => verse.toLegacyBody()),
+      events: SessionEvent.bodies(outcome.events, translation(req)),
     })
   },
 )
@@ -164,7 +128,7 @@ sessionRouter.post(
  */
 sessionRouter.post('/session/complete', resolveTranslation, (req, res) => {
   const id = userId(req)
-  const timezone = timezoneFor(id)
+  const timezone = timezoneFor(req)
   const today = todayInTimezone(timezone)
 
   // completed_at is a UTC instant, so "already logged today" is decided by
@@ -196,8 +160,8 @@ sessionRouter.post('/session/complete', resolveTranslation, (req, res) => {
   res.json({
     recorded: !alreadyLogged,
     sessionsCompleted,
-    slotsFilled: slotsFilled.map(legacyUserVerseBody),
+    slotsFilled: slotsFilled.map((verse) => verse.toLegacyBody()),
     // Like /attempt, only what this call moved — the slots it just topped up.
-    events: sessionEventBodies(events, translation(req)),
+    events: SessionEvent.bodies(events, translation(req)),
   })
 })

@@ -5,6 +5,7 @@ import express, {
 } from 'express'
 import { ApiError } from './lib/errors'
 import { requireAuth } from './middleware/auth'
+import { loadUser } from './middleware/loadUser'
 import { authRouter } from './routes/auth'
 import { meRouter } from './routes/me'
 import { pushRouter } from './routes/push'
@@ -21,7 +22,7 @@ export function createApp() {
 
   app.use('/auth', authRouter)
 
-  app.use('/api', requireAuth)
+  app.use('/api', requireAuth, loadUser)
   app.use('/api', sessionRouter)
   app.use('/api', versesRouter)
   app.use('/api', queueRouter)

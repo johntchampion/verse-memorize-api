@@ -17,7 +17,7 @@ import {
   advance,
 } from '../src/domain/progression'
 import type { Stage } from '../src/domain/stage'
-import type { VerseProgress } from '../src/domain/userVerse'
+import type { VerseProgress } from '../src/models/UserVerse'
 
 const TODAY = '2026-03-10'
 const YESTERDAY = '2026-03-09'

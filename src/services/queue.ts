@@ -1,7 +1,7 @@
 import * as queueOrder from '../repositories/queueOrderRepository'
 import * as userVerses from '../repositories/userVerseRepository'
 import { isLearningStage } from '../domain/stage'
-import type { UserVerse } from '../domain/userVerse'
+import type { UserVerse } from '../models/UserVerse'
 import { QueueError } from '../lib/errors'
 import { getTheme } from '../data/themes'
 import { versesInOrder } from '../data/verses'

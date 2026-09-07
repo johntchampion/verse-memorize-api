@@ -1,9 +1,9 @@
 import { Router } from 'express'
+import { AttemptHistory } from '../models/AttemptHistory'
 import * as attempts from '../repositories/attemptRepository'
 import * as userVerses from '../repositories/userVerseRepository'
 import { browseStatusFor } from '../domain/stage'
 import { NotFoundError } from '../lib/errors'
-import { legacyUserVerseBody } from '../domain/userVerse'
 import { themesForVerse } from '../data/themes'
 import { getVerse, versesInCanonOrder, versesInOrder } from '../data/verses'
 import { userId } from '../middleware/auth'
@@ -61,9 +61,11 @@ versesRouter.get('/verses/:id', (req, res) => {
 
   const progress = userVerses.findByUserAndVerse(id, verse.id)
 
-  const history = progress
-    ? attempts.recentForUserVerse(progress.id, ATTEMPT_HISTORY_LIMIT)
-    : []
+  const history = new AttemptHistory(
+    progress
+      ? attempts.recentForUserVerse(progress.id, ATTEMPT_HISTORY_LIMIT)
+      : [],
+  )
 
   // Only review and mastered are scheduled; a learning or queued verse has no
   // due date at all, which is what a null schedule means here.
@@ -88,12 +90,8 @@ versesRouter.get('/verses/:id', (req, res) => {
     queuePosition: queueIndex === -1 ? null : queueIndex + 1,
     status: browseStatusFor(progress?.stage),
     graduatedAt: progress?.graduatedAt ?? null,
-    userVerse: progress ? legacyUserVerseBody(progress) : null,
+    userVerse: progress ? progress.toLegacyBody() : null,
     schedule,
-    history: {
-      attempts: history,
-      total: history.length,
-      correct: history.filter((a) => a.correct === 1).length,
-    },
+    history: history.toBody(),
   })
 })

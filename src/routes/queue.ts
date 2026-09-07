@@ -3,7 +3,6 @@ import { z } from 'zod'
 import * as userVerses from '../repositories/userVerseRepository'
 import { THEMES, themesForVerse } from '../data/themes'
 import { versesInOrder } from '../data/verses'
-import { legacyUserVerseBody } from '../domain/userVerse'
 import { validate, validated } from '../lib/http'
 import { userId } from '../middleware/auth'
 import { resolveTranslation, translation } from '../middleware/translation'
@@ -133,7 +132,7 @@ queueRouter.post('/slots/replace', validate(replaceBody), (req, res) => {
 
   res.json({
     ...queuePayload(id, translation(req)),
-    placed: legacyUserVerseBody(placed),
-    displaced: displaced ? legacyUserVerseBody(displaced) : null,
+    placed: placed.toLegacyBody(),
+    displaced: displaced ? displaced.toLegacyBody() : null,
   })
 })

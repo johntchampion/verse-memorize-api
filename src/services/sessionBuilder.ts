@@ -3,8 +3,7 @@ import * as userVerses from '../repositories/userVerseRepository'
 import { DEFAULT_TRANSLATION, getVerse } from '../data/verses'
 import type { SessionQueue } from '../domain/sessionExercise'
 import type { Stage } from '../domain/stage'
-import type { UserVerse } from '../domain/userVerse'
-import { legacyUserVerseBody } from '../domain/userVerse'
+import type { UserVerse } from '../models/UserVerse'
 import { todayInTimezone } from '../lib/dates'
 import { buildExercise, type Exercise } from './exerciseBuilder'
 import { ensureTodayPlan } from './sessionPlan'
@@ -61,7 +60,7 @@ function render(
     queue,
     completed,
     correct,
-    userVerse: legacyUserVerseBody(progress),
+    userVerse: progress.toLegacyBody(),
   }
 }
 

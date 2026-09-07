@@ -1,7 +1,7 @@
 import { getVerse } from '../data/verses'
 import { SlotError } from '../lib/errors'
 import * as userVerses from '../repositories/userVerseRepository'
-import type { UserVerse } from '../domain/userVerse'
+import type { UserVerse } from '../models/UserVerse'
 import { isQueued, queueVerseIds } from './queue'
 
 /** A user holds at most 3 active learning slots at once. */

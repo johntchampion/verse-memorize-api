@@ -2,37 +2,16 @@
 import { randomUUID } from 'node:crypto'
 import { db } from '../db/client'
 import type { UserVerseRow } from '../db/rows'
-import type { UserVerse, VerseProgress } from '../domain/userVerse'
-
-export function toUserVerse(row: UserVerseRow): UserVerse {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    verseId: row.verse_id,
-    stage: row.stage,
-    consecutiveCorrect: row.consecutive_correct,
-    consecutiveIncorrect: row.consecutive_incorrect,
-    streakDate: row.streak_date,
-    intervalDays: row.interval_days,
-    dueAt: row.due_at,
-    lastUpgradeDate: row.last_upgrade_date,
-    lastDowngradeDate: row.last_downgrade_date,
-    needsRelearning: row.needs_relearning === 1,
-    relearningQueuedAt: row.relearning_queued_at,
-    slot: row.slot,
-    activatedAt: row.activated_at,
-    graduatedAt: row.graduated_at,
-  }
-}
+import { UserVerse, type VerseProgress } from '../models/UserVerse'
 
 function one(sql: string, ...params: unknown[]): UserVerse | undefined {
   const row = db.prepare(sql).get(...params) as UserVerseRow | undefined
-  return row ? toUserVerse(row) : undefined
+  return row ? UserVerse.fromRow(row) : undefined
 }
 
 function many(sql: string, ...params: unknown[]): UserVerse[] {
   const rows = db.prepare(sql).all(...params) as UserVerseRow[]
-  return rows.map(toUserVerse)
+  return rows.map(UserVerse.fromRow)
 }
 
 export function findById(id: string): UserVerse | undefined {
