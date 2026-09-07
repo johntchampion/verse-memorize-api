@@ -1,5 +1,5 @@
 import { getVerse } from '../../data/verses'
-import { todayInTimezone } from '../../lib/dates'
+import { formatInTimezone, todayInTimezone } from '../../lib/dates'
 import { Streak } from '../../models/Streak'
 import type { Snapshot } from './queries'
 
@@ -24,7 +24,8 @@ type Record = { [K in (typeof FIELDS)[number]['key']]: string } & {
   slotted: string[]
 }
 
-const asDate = (iso: string | null) => (iso ? iso.slice(0, 10) : NONE)
+const asDateTime = (iso: string | null, timezone: string) =>
+  iso ? formatInTimezone(timezone, new Date(iso)) : NONE
 
 function toRecords(snapshot: Snapshot): Record[] {
   return snapshot.accounts.map((account) => {
@@ -33,10 +34,10 @@ function toRecords(snapshot: Snapshot): Record[] {
 
     return {
       email: account.email,
-      created: asDate(account.created_at),
+      created: asDateTime(account.created_at, account.timezone),
       timezone: account.timezone,
       translation: account.translation,
-      lastAttempt: asDate(account.last_attempt_at),
+      lastAttempt: asDateTime(account.last_attempt_at, account.timezone),
       streak: String(streak.lengthAsOf(todayInTimezone(account.timezone))),
       started: String(account.verses_started),
       practiced: String(account.verses_practiced),

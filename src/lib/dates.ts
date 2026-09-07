@@ -52,6 +52,17 @@ export function minuteOfDayInTimezone(timezone: string, instant: Date): number {
   }
 }
 
+/** `YYYY-MM-DD HH:mm:ss` for `instant` as seen in `timezone`. */
+export function formatInTimezone(timezone: string, instant: Date): string {
+  try {
+    const p = localParts(timezone, instant)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${p.year}-${pad(p.month)}-${pad(p.day)} ${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`
+  } catch {
+    return instant.toISOString().replace('T', ' ').slice(0, 19)
+  }
+}
+
 interface LocalParts {
   year: number
   month: number
