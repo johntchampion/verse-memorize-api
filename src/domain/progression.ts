@@ -167,8 +167,8 @@ function advanceMastered(
     next.dueAt = addDays(today, MAX_INTERVAL_DAYS)
   } else {
     next.stage = 'review'
-    next.intervalDays = 1
-    next.dueAt = addDays(today, 1)
+    next.intervalDays = 30
+    next.dueAt = addDays(today, 30)
     next.consecutiveCorrect = 0
     // The miss that cost mastery is also the first strike toward review's
     // two-miss demotion — one more now sends it back to a learning slot.

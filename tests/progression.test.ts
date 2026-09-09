@@ -393,13 +393,13 @@ describe('mastered', () => {
     )
 
     expect(result.next.stage).toBe('review')
-    expect(result.next.intervalDays).toBe(1)
+    expect(result.next.intervalDays).toBe(30)
     // The miss that cost mastery is also the first strike toward review's
     // two-miss demotion, so one more sends it to relearning — on the next due
     // date, not later the same afternoon.
     expect(result.next.consecutiveIncorrect).toBe(1)
 
-    const secondMiss = advance(result.next, false, '2026-03-11', NOW)
+    const secondMiss = advance(result.next, false, result.next.dueAt as string, NOW)
     expect(secondMiss.next.needsRelearning).toBe(true)
   })
 })
