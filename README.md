@@ -241,7 +241,7 @@ learning_light ──▶ learning_medium ──▶ learning_heavy ──▶ revi
                  (out of learning_heavy this is graduation, and the slot empties)
        review:   3 correct in a row, any span, steps the interval up;
                  a step past 30 days becomes mastery instead
-  ◀──  learning: 2 wrong in a row — learning_light is the floor
+  ◀──  learning: 3 wrong in a row, within one calendar day — learning_light is the floor
        review:   2 failed reviews, via the relearning queue, back to heavy
        mastered: a single miss, straight to review at interval 1
 ```
@@ -262,8 +262,9 @@ verses were stranded forever.)
 - **Up:** 3 correct **in a row within the same calendar day**. Because the run
   has to fit inside one day, `consecutive_correct` starts over each morning —
   two correct yesterday do not count toward today's three.
-- **Down:** 2 wrong in a row, which _may_ span days. `learning_light` is the
-  floor; two misses there change nothing.
+- **Down:** 3 wrong **in a row within the same calendar day**, mirroring the
+  up rule — `consecutive_incorrect` starts over each morning too. `learning_light`
+  is the floor; three misses there change nothing.
 - **At most one tier change per verse per day, in either direction.** A verse
   that has already moved today can't move again — the extra correct answers are
   just practice. Either way the streak that would have triggered the change is
@@ -422,7 +423,7 @@ call site.
 | Constant                    | Value           | Meaning                                           |
 | --------------------------- | --------------- | ------------------------------------------------- |
 | `TIER_ADVANCE_THRESHOLD`    | 3               | Same-day correct run that advances a slotted tier |
-| `TIER_DOWNGRADE_THRESHOLD`  | 2               | Wrong run that drops a slotted tier               |
+| `TIER_DOWNGRADE_THRESHOLD`  | 3               | Same-day wrong run that drops a slotted tier      |
 | `INTERVAL_PROGRESSION`      | 1, 3, 7, 14, 30 | Review interval ladder, in days                   |
 | `REVIEW_ADVANCE_THRESHOLD`  | 3               | Correct due dates that step one rung up           |
 | `REVIEW_DEMOTION_THRESHOLD` | 2               | Missed due dates that queue a verse for relearning |

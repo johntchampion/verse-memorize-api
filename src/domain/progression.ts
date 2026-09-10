@@ -13,7 +13,7 @@ import type { VerseProgress } from '../models/UserVerse'
 
 // Tuning constants. Change these here, not at the call sites.
 export const TIER_ADVANCE_THRESHOLD = 3
-export const TIER_DOWNGRADE_THRESHOLD = 2
+export const TIER_DOWNGRADE_THRESHOLD = 3
 export const REVIEW_ADVANCE_THRESHOLD = 3
 export const REVIEW_DEMOTION_THRESHOLD = 2
 export const INTERVAL_PROGRESSION = [1, 3, 7, 14, 30] as const
@@ -79,20 +79,24 @@ function advanceLearning(
 function learningMiss(progress: VerseProgress, today: string): Transition {
   const next = { ...progress }
 
-  // Unlike the correct-streak, this one is allowed to span days.
-  next.consecutiveIncorrect += 1
+  // The three-in-a-row has to land inside one calendar day, so a run carried
+  // over from yesterday starts again at one.
+  const carried =
+    progress.streakDate === today ? progress.consecutiveIncorrect : 0
+  next.consecutiveIncorrect = carried + 1
   next.consecutiveCorrect = 0
-  next.streakDate = null
+  next.streakDate = today
 
   if (next.consecutiveIncorrect < TIER_DOWNGRADE_THRESHOLD) {
     return unchangedExcept(next)
   }
 
-  // Spent either way: after a blocked downgrade a fresh pair of misses is
+  // Spent either way: after a blocked downgrade a fresh streak of misses is
   // needed to trigger one again.
   next.consecutiveIncorrect = 0
+  next.streakDate = null
 
-  // Null at learning_light, the floor — two misses there change nothing.
+  // Null at learning_light, the floor — three misses there change nothing.
   const demoted = previousLearningStage(progress.stage)
   if (demoted && !tierChangeSpentToday(progress, today)) {
     next.stage = demoted

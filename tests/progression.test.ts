@@ -169,17 +169,25 @@ describe('learning tiers', () => {
 
     expect(result.next.stage).toBe('learning_medium')
     expect(result.next.lastDowngradeDate).toBe(TODAY)
+    // The run is spent by the downgrade.
+    expect(result.next.consecutiveIncorrect).toBe(0)
+    expect(result.next.streakDate).toBeNull()
   })
 
-  it('lets an incorrect run span days, unlike a correct one', () => {
-    const startedYesterday = progress({
+  it('does not carry an incorrect run across a day boundary', () => {
+    // Two incorrect yesterday, one incorrect today: the run restarts, so this
+    // is the first of today rather than the third overall.
+    const carried = progress({
       stage: 'learning_heavy',
       consecutiveIncorrect: TIER_DOWNGRADE_THRESHOLD - 1,
+      streakDate: YESTERDAY,
     })
 
-    const result = advance(startedYesterday, false, TODAY, NOW)
+    const result = advance(carried, false, TODAY, NOW)
 
-    expect(result.next.stage).toBe('learning_medium')
+    expect(result.next.consecutiveIncorrect).toBe(1)
+    expect(result.next.stage).toBe('learning_heavy')
+    expect(result.next.streakDate).toBe(TODAY)
   })
 
   it('treats learning_light as the floor', () => {
