@@ -128,7 +128,7 @@ describe('instantForLocalTime', () => {
 
     // 02:30 local does not exist. There is no right answer, so what matters is
     // that there is a stable one — not a throw and not an Invalid Date. This
-    // pins the documented behaviour so a refactor can't quietly change it.
+    // pins the documented behavior so a refactor can't quietly change it.
     it('lands a nonexistent local time on a stable instant', () => {
       const instant = instantForLocalTime(
         'America/Chicago',

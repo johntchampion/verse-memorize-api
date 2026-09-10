@@ -26,7 +26,7 @@ export const REMINDER_TOPIC = 'daily-reminder'
 
 /** Kept short: an encrypted payload has about 4KB, and some services are stricter. */
 export const DAILY_REMINDER: ReminderPayload = {
-  title: 'Time to practise',
+  title: 'Time to practice',
   body: 'Your verses are waiting.',
   url: '/',
   tag: 'daily-reminder',

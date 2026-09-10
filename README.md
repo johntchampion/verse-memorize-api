@@ -322,7 +322,7 @@ The anchor is a *prior* day on purpose: practising this morning must not move
 this evening's reminder. With no anchor — a new account, or one quiet for
 longer than the 90-day lookback — the due time is simply 21:00. That window is
 both a cost control (attempts are never pruned, so an unbounded lookup walks
-the account's whole history) and the right answer: someone who hasn't practised
+the account's whole history) and the right answer: someone who hasn't practiced
 in three months has no habitual time left to aim at.
 
 **When it doesn't fire.** Two suppressions, both checked at the due minute:
@@ -412,7 +412,7 @@ built fresh from `schema.sql`, where the column is always present.
 
 Push subscriptions deliberately survive a reset. A revoked device stops being
 able to call the API but keeps receiving daily reminders; there is no device
-list to make either behaviour legible, so the smaller change wins.
+list to make either behavior legible, so the smaller change wins.
 
 ### Tuning constants
 
@@ -463,7 +463,7 @@ append-only:
   that graduated mid-session, stays in the list marked `completed` instead of
   vanishing out from under the client.
 - A slot refilled mid-session appends its three exercises to the tail, which is
-  the same-day behaviour it has always had.
+  the same-day behavior it has always had.
 
 Only identity and order are stored. [`DailySession.ts`](./src/models/DailySession.ts)
 regenerates the text, blanks and word bank on every read, at the verse's
@@ -550,7 +550,7 @@ src/
 
 The boundaries are the point:
 
-- **`models/`** hold the behaviour. A `UserVerse` knows whether it is due; a
+- **`models/`** hold the behavior. A `UserVerse` knows whether it is due; a
   `PracticeQueue` knows its own order; a `DailySession` knows what today holds.
 - **`repositories/`** own every SQL statement and every row-to-model mapping.
   Nothing above them sees a snake_case row, and nothing below them knows a

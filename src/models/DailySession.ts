@@ -41,7 +41,7 @@ export class DailySession {
         verse,
         translation,
         // Null only for a day planned before stages were pinned; those rows
-        // keep the old live-stage behaviour until the day rolls over.
+        // keep the old live-stage behavior until the day rolls over.
         stage: item.stage ?? verse.stage,
         queue: item.queue,
         instance: item.instance,

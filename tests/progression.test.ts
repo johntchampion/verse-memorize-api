@@ -294,7 +294,7 @@ describe('one counted answer per due date', () => {
   it(`cannot turn a one-day interval into ${INTERVAL_PROGRESSION[1]} days by drilling`, () => {
     // The scenario the rule exists for: a verse on a one-day interval owes
     // three separate days before it steps up, however many times it is
-    // practised in any one of them.
+    // practiced in any one of them.
     let current = dueReview(1)
     for (let i = 0; i < REVIEW_ADVANCE_THRESHOLD * 3; i += 1) {
       current = advance(current, true, TODAY, NOW).next
@@ -407,7 +407,12 @@ describe('mastered', () => {
     // date, not later the same afternoon.
     expect(result.next.consecutiveIncorrect).toBe(1)
 
-    const secondMiss = advance(result.next, false, result.next.dueAt as string, NOW)
+    const secondMiss = advance(
+      result.next,
+      false,
+      result.next.dueAt as string,
+      NOW,
+    )
     expect(secondMiss.next.needsRelearning).toBe(true)
   })
 })

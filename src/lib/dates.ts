@@ -7,7 +7,7 @@
  * fires at a time of day — so the last two helpers convert between an instant
  * and a local time. They live here rather than in a module of their own
  * because they are the same Intl-over-IANA machinery as `todayInTimezone`,
- * including its fall-back-to-UTC behaviour for a timezone the platform
+ * including its fall-back-to-UTC behavior for a timezone the platform
  * doesn't recognise.
  */
 
