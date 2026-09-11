@@ -10,6 +10,7 @@ const FIELDS = [
   { key: 'translation', label: 'Translation' },
   { key: 'lastAttempt', label: 'Last Attempt' },
   { key: 'streak', label: 'Streak' },
+  { key: 'pushEnabled', label: 'Push Notifications' },
   { key: 'started', label: 'Started' },
   { key: 'practiced', label: 'Practiced' },
   { key: 'attempts24h', label: 'Attempts/24h' },
@@ -31,6 +32,8 @@ function toRecords(snapshot: Snapshot): Record[] {
   return snapshot.accounts.map((account) => {
     const sessions = snapshot.sessionsByUser.get(account.id) ?? []
     const streak = new Streak(sessions, account.timezone)
+    const today = todayInTimezone(account.timezone)
+    const todayStatus = streak.completedOn(today) ? 'today done' : 'today not done'
 
     return {
       email: account.email,
@@ -38,7 +41,8 @@ function toRecords(snapshot: Snapshot): Record[] {
       timezone: account.timezone,
       translation: account.translation,
       lastAttempt: asDateTime(account.last_attempt_at, account.timezone),
-      streak: String(streak.lengthAsOf(todayInTimezone(account.timezone))),
+      streak: `${streak.lengthAsOf(today)} (${todayStatus})`,
+      pushEnabled: account.push_enabled ? 'Yes' : 'No',
       started: String(account.verses_started),
       practiced: String(account.verses_practiced),
       attempts24h: String(account.attempts_24h),

@@ -13,6 +13,7 @@ export interface AccountRow {
   created_at: string
   timezone: string
   translation: string
+  push_enabled: number
   verses_started: number
   verses_practiced: number
   last_attempt_at: string | null
@@ -57,7 +58,9 @@ const ACCOUNTS_SQL = `
     (SELECT COUNT(*) FROM attempt a
        JOIN user_verse uv ON uv.id = a.user_verse_id
        WHERE uv.user_id = u.id
-         AND a.created_at >= datetime('now', '-30 days')) AS attempts_30d
+         AND a.created_at >= datetime('now', '-30 days')) AS attempts_30d,
+    EXISTS(SELECT 1 FROM push_subscription ps
+       WHERE ps.user_id = u.id) AS push_enabled
   FROM users u
   ORDER BY last_attempt_at DESC NULLS LAST`
 
