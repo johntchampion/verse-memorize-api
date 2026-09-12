@@ -1,4 +1,4 @@
-# verse-memorize-api
+# Verse Memorize - Service
 
 Backend for a Bible-verse memorization app. It serves exercises, tracks each
 user's progress through a fixed 100-verse bank, and drives a spaced-repetition
@@ -10,6 +10,9 @@ one file-backed database, no external services.
 This README is the reference for how the algorithm works — the rules under
 [How it works](#how-it-works) are the specification, and the code comments
 assume you've read them.
+
+The progressive web app that consumes this service is 
+in [this GitHub repo](https://github.com/johntchampion/verse-memorize-pwa).
 
 ---
 
@@ -411,7 +414,7 @@ the suite that can catch a missing column migration: every other test database i
 built fresh from `schema.sql`, where the column is always present.
 
 Push subscriptions deliberately survive a reset. A revoked device stops being
-able to call the API but keeps receiving daily reminders; there is no device
+able to call the backend API but keeps receiving daily reminders; there is no device
 list to make either behavior legible, so the smaller change wins.
 
 ### Tuning constants
@@ -566,7 +569,7 @@ The boundaries are the point:
 
 ---
 
-## API
+## Backend Service REST API
 
 `/auth/*` is public. Everything under `/api/*` requires
 `Authorization: Bearer <token>` (30-day JWT, no refresh tokens).
@@ -842,9 +845,3 @@ and `tsc` will point at every switch and lookup table that needs the new case.
 - **Dead push endpoints are only collected on `404`/`410`.** There is no
   failure counter: a column written on every send that nothing reads is cruft
   until an endpoint that `500`s forever is actually observed.
-
-### Not built (out of scope for v1)
-
-Multiple verse sets · admin UI for verses · Postgres migration ·
-per-verse translation overrides · a user-chosen reminder time (the derived rule
-is the feature; an override doubles the stored state, the UI and the tests).
